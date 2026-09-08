@@ -166,28 +166,34 @@ function draw(){
     const isSouthEdge=(r,c)=> L[r][c]!==0 && !(r+1<ROWS && L[r+1][c]!==0);
     // 段位: 左右邻是否本层(非0) => 连续(0)/端(1)。窄或端由 wLow/eLow 决定
     const seg=(r,c)=>{ const wLow=!( (c-1>=0)&&L[r][c-1]!==0 ); const eLow=!( (c+1<COLS)&&L[r][c+1]!==0 ); return {wLow,eLow}; };
-    // 1) 草面: 南边界用草唇(分落草地/落水), 其它用 16 掩码草面
+    // 1) 草面 + 南边界草唇: 用 maskHill 掩码(覆盖 1-9/13-15/16 竖条与孤立)。南边界(正下方无本层)该掩码 S=0 -> 得到 13/14/15/16 或 7/8/9/10-12。
+    //    若南边是水(0层该格水), 草唇用草岩唇行(y=192, id 同 maskHill 但取行3), 否则纯草唇行(y=128)。
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]===0) continue;
-      const {wLow,eLow}=seg(r,c);
-      const sx = lipSX(wLow,eLow);
+      const m=maskHill(l,r,c);
+      const tp=AUTOTILE[m]||AUTOTILE["1111"];
       if(isSouthEdge(r,c)){
         const southIsWater = !!(r+1<ROWS && layers[0] && layers[0][r+1][c]===0);
-        const sy = southIsWater? 192 : 128;   // 水->草岩唇(行3 10-12/16), 0层草地->纯草唇(行2 7-9/15)
-        ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,r*TS,TS,TS);
+        const sy = southIsWater? 192 : 128;   // 落水草唇行(10-12/16) / 落地草唇行(7-9/15), 取同 x
+        ctx.drawImage(sheet, tp.sx,sy,TS,TS, c*TS,r*TS,TS,TS);
       } else {
-        const m=maskHill(l,r,c); const tp=AUTOTILE[m]||AUTOTILE["1111"];
         ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
       }
     }
-    // 2) 悬崖: 南边界格的正下方(下一格) —— 分落草地(y=256 17-20) / 落水(y=320 21-24)
+    // 2) 悬崖: 南边界格的正下方(下一格) —— 段位取该格草面掩码的 N/E/W 位; 分落草地(y=256 17-20)/落水(y=320 21-24)
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(!isSouthEdge(r,c)) continue;
       if(r+1>=ROWS) continue;
       const southIsWater = !!(layers[0]&&layers[0][r+1]&&layers[0][r+1][c]===0);
       const sy = southIsWater? 320 : 256;
-      const {wLow,eLow}=seg(r,c);
-      ctx.drawImage(sheet, cliffSX(wLow,eLow),sy,TS,TS, c*TS,(r+1)*TS,TS,TS);
+      const m=maskHill(l,r,c);              // 南边界掩码 S=0
+      const Wsame=m[3]==='1', Esame=m[1]==='1';
+      let sx;
+      if(!Wsame&&!Esame) sx=512;   // 窄(或竖条) -> 16/20
+      else if(!Wsame) sx=320;      // 左端
+      else if(!Esame) sx=448;      // 右端
+      else sx=384;                 // 中
+      ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,(r+1)*TS,TS,TS);
     }
   }
   // 网格
