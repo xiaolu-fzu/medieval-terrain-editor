@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>地形编辑器 · 图层</title>
+<style>
+  :root{ --amber:#f5b942; --text:#e8e9ec; --muted:#9aa0ab; --line:#2a2f38; --panel:#151a21; }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;background:#0c0f14;overflow:hidden;}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);}
+  .app{display:grid;grid-template-rows:auto 1fr auto;height:100%;}
+  .topbar{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .topbar h1{font-size:15px;font-weight:700;} .topbar h1 .dot{color:var(--amber);}
+  .hint{font-size:11px;color:var(--muted);}
+  .btn{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--text);background:#222831;border:1px solid #333b46;border-radius:8px;padding:6px 12px;cursor:pointer;}
+  .btn:hover{background:#2a323d;} .btn.amber{background:var(--amber);color:#1a1a1a;border-color:var(--amber);}
+  .btn.red{background:#c03a2a;color:#fff;border-color:#c03a2a;}
+  .btn.red.on{background:#e0553f;}
+  .spacer{flex:1;}
+  .main{display:grid;grid-template-columns:200px 1fr;min-height:0;}
+  aside{background:var(--panel);border-right:1px solid var(--line);padding:12px;overflow-y:auto;}
+  aside h3{font-size:11px;font-weight:700;color:var(--muted);margin:0 0 8px;text-transform:uppercase;letter-spacing:.5px;}
+  aside .group{margin-bottom:16px;}
+  .field{display:flex;align-items:center;gap:6px;margin:5px 0;font-size:12px;}
+  .field label{width:52px;color:var(--muted);}
+  .field input{width:76px;font-family:inherit;font-size:12px;color:var(--text);background:#10151b;border:1px solid #333b46;border-radius:6px;padding:5px 7px;}
+  aside .btn{width:100%;margin-top:6px;}
+  /* 图层面板 */
+  .layer-row{display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:6px;border-radius:8px;background:#10151b;border:2px solid transparent;cursor:pointer;}
+  .layer-row.on{border-color:var(--amber);}
+  .layer-row .sw{width:30px;height:30px;image-rendering:pixelated;border-radius:5px;background:#0e1a24;flex:none;}
+  .layer-row .nm{font-size:12px;flex:1;}
+  .layer-row .vis{width:34px;height:20px;flex:none;display:flex;align-items:center;}
+  .layer-row .vis input{width:16px;height:16px;accent-color:var(--amber);}
+  #brushBtns{display:flex;flex-wrap:wrap;gap:6px;}
+  #brushBtns .btn{flex:1;min-width:44%;padding:6px 4px;}
+  .canvaswrap{overflow:auto;background:#080a0d;}
+  canvas{display:block;background:#0e1a24;image-rendering:pixelated;}
+  .statusbar{display:flex;gap:18px;align-items:center;padding:8px 14px;background:var(--panel);border-top:1px solid var(--line);font-size:12px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>地形编辑器 <span class="dot">·</span> 图层</h1>
+    <span class="hint">选层绘制 · 勾选显示 · 第0层选水/草地/悬崖</span>
+  </div>
+
+  <div class="main">
+    <aside>
+      <div class="group">
+        <h3>画布大小</h3>
+        <div class="field"><label>行</label><input type="number" id="rows" value="14" min="4" max="200"></div>
+        <div class="field"><label>列</label><input type="number" id="cols" value="24" min="4" max="200"></div>
+        <button class="btn amber" id="applySize">应用大小</button>
+      </div>
+      <div class="group">
+        <h3>图层</h3>
+        <div id="layerList"></div>
+      </div>
+      <div class="group">
+        <h3 id="brushTitle">第0层 画笔</h3>
+        <div id="brushBtns"></div>
+      </div>
+      <div class="group">
+        <h3>示例</h3>
+        <button class="btn" id="demoCliff">悬崖示例(连续+孤立)</button>
+      </div>
+      <div class="group">
+        <h3>第0层 初始</h3>
+        <button class="btn" id="initWater">全水</button>
+        <button class="btn" id="initGrass">全草</button>
+      </div>
+    </aside>
+    <div class="canvaswrap"><canvas id="cv"></canvas></div>
+  </div>
+
+  <div class="statusbar">
+    <span>当前层：<b id="curLayer">第0层</b></span>
+    <span>坐标：<b id="cursor"></b></span>
+    <span>该层格数 <b id="landCount">0</b></span>
+  </div>
+</div>
+<script>
+window.addEventListener('error',function(ev){ document.title='ERR '+ev.message; });
+</script>
+<script>
+const TS=64, NLAYER=4; // 0,1,2,3
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+function img(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('load '+src));i.src=src;});}
+const AUTOTILE={
+  "1111":{sx:64,sy:64},  "0111":{sx:64,sy:0},  "1011":{sx:128,sy:64},"1101":{sx:64,sy:128},
+  "1110":{sx:0,sy:64},   "0110":{sx:0,sy:0},   "0011":{sx:128,sy:0}, "1100":{sx:0,sy:128},
+  "1001":{sx:128,sy:128},"0100":{sx:0,sy:192}, "0101":{sx:64,sy:192},"0001":{sx:128,sy:192},
+  "0010":{sx:192,sy:0},  "1010":{sx:192,sy:64},"1000":{sx:192,sy:128},"0000":{sx:192,sy:192}
+};
+// 草唇(高地南边界草顶): 按左右邻是否同为"南边界"选左/中/右/窄(sx); sy=192(行3)
+// 悬崖: 左/中/右/窄(sx), 落平地 sy=256(行4) / 落水 sy=320(行5)
+function lipSX(wLow,eLow){ if(wLow&&eLow) return 512; if(wLow) return 320; if(eLow) return 448; return 384; }
+function cliffSX(wLow,eLow){ if(wLow&&eLow) return 512; if(wLow) return 320; if(eLow) return 448; return 384; }
+// 层定义：第0层=水/草地(黑白翻转), 1/2/3 = 高地草(用 color2/3/4 的 id5 中心草)
+const LAYERDEF=[
+  {name:"第0层", color:"color1", kind:"base"},
+  {name:"第1层", color:"color2", kind:"hill"},
+  {name:"第2层", color:"color3", kind:"hill"},
+  {name:"第3层", color:"color4", kind:"hill"},
+];
+let COLS=24, ROWS=14;
+let layers=[]; for(let l=0;l<NLAYER;l++){ const g=[]; for(let r=0;r<ROWS;r++) g.push(new Array(COLS).fill(0)); layers.push(g); }
+let layerVis=[true,true,true,true]; // 显隐
+let curLayer=0; // 当前绘制层
+let brush='grass'; // 通用画笔: water|grass|cliff
+let A=null;
+const W=()=>COLS*TS, H=()=>ROWS*TS;
+
+// 第0层掩码(水/草地)
+function mask0(r,c){ const isL=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false; return layers[0][rr][cc]!==0; }; return ""+(isL(r-1,c)?1:0)+(isL(r,c+1)?1:0)+(isL(r+1,c)?1:0)+(isL(r,c-1)?1:0); }
+// 高地层掩码(该层自身/下层任一为陆 => 同方块? 简化：该层有内容算陆)
+function maskHill(l,r,c){
+  const L=layers[l];
+  const same=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false; return L[rr][cc]!==0; };
+  // 顶部草地：N/E/W 按同层邻居判 same；南向强制视为"接悬崖"(即 S=0 处理，让草顶用能接崖的边) —— 但为了顶面完整，南向也按同层判断，若不同则用边缘草
+  const N=same(r-1,c)?1:0, E=same(r,c+1)?1:0, S=same(r+1,c)?1:0, W=same(r,c-1)?1:0;
+  return ""+N+E+S+W;
+}
+
+
+function draw(){
+  ctx.fillStyle='#0e1a24'; ctx.fillRect(0,0,W(),H());
+  // 第0层：水/草地/悬崖(岸边+南向悬崖自动)
+  if(layerVis[0]){
+    // 全体先铺水
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      ctx.drawImage(A.waterbg,0,0,TS,TS,c*TS,r*TS,TS,TS);
+    }
+    // 草地顶面(值1草地, 值2悬崖也铺草底) + 水岸边用普通草地掩码
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const v=layers[0][r][c];
+      if(v===1||v===2){ const m=mask0(r,c); const tp=AUTOTILE[m]||AUTOTILE["1111"]; ctx.drawImage(A.sheets['color1'], tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS); }
+    }
+    // 悬崖标记(值2=连续, 值3=窄): 顶面无缝中心草(1111) + 正下方悬崖(落水320/落地256)
+    const L0=layers[0];
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(L0[r][c]!==2 && L0[r][c]!==3) continue;
+      const narrow = L0[r][c]===3;
+      const wLow = narrow? true : !( (c-1>=0)&&L0[r][c-1]!==0 );
+      const eLow = narrow? true : !( (c+1<COLS)&&L0[r][c+1]!==0 );
+      // 顶面: 中心草(无缝)
+      const tp=AUTOTILE["1111"];
+      ctx.drawImage(A.sheets['color1'], tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
+      if(r+1<ROWS){
+        const southWater = L0[r+1][c]===0;
+        const sy = southWater?320:256;
+        ctx.drawImage(A.sheets['color1'], cliffSX(wLow,eLow),sy,TS,TS, c*TS,(r+1)*TS,TS,TS);
+      }
+    }
+  }
+  // 第1/2/3层叠加：先草地顶面，后南边自动生成悬崖
+  for(let l=1;l<NLAYER;l++){
+    if(!layerVis[l]) continue;
+    const sheet=A.sheets[LAYERDEF[l].color];
+    // 规则: 该格是"南边界"(本层有内容 且 南邻不在本层) => 用草唇; 否则用普通草地掩码
+    //       南边界格的正下方 => 悬崖(左/中/右/窄 与草唇同套水平规则)
+    const L=layers[l];
+    const isSouthEdge=(r,c)=> L[r][c]!==0 && !(r+1<ROWS && L[r+1][c]!==0);
+    // 段位(wLow/eLow): 值3(窄)强制窄, 值2按左右邻
+    const seg=(r,c)=>{ const narrow=L[r][c]===3; const wLow=narrow?true:!( (c-1>=0)&&L[r][c-1]!==0 ); const eLow=narrow?true:!( (c+1<COLS)&&L[r][c+1]!==0 ); return {wLow,eLow}; };
+    // 1) 草顶(无缝): 顶面统一用中心草(1111)，保证悬崖顶面连续无缝; 只在正下方画岩壁
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(L[r][c]===0) continue;
+      const tp=AUTOTILE["1111"];   // 中心草, 无缝
+      ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
+    }
+    // 2) 悬崖: 南边界格的正下方(下一格)
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(!isSouthEdge(r,c)) continue;
+      if(r+1>=ROWS) continue;
+      const southWater = !!(layers[0]&&layers[0][r+1]&&layers[0][r+1][c]===0);
+      const sy = southWater?320:256;
+      const {wLow,eLow}=seg(r,c);
+      ctx.drawImage(sheet, cliffSX(wLow,eLow),sy,TS,TS, c*TS,(r+1)*TS,TS,TS);
+    }
+  }
+  // 网格
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*TS+.5,0);ctx.lineTo(c*TS+.5,H());ctx.stroke();}
+  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*TS+.5);ctx.lineTo(W(),r*TS+.5);ctx.stroke();}
+  let cnt=0; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(layers[curLayer][r][c]) cnt++;
+  document.getElementById('landCount').textContent=cnt;
+}
+function resizeCanvas(){ cv.width=W(); cv.height=H(); }
+function cellAt(e){ const rc=cv.getBoundingClientRect(); const x=Math.floor(e.clientX-rc.left),y=Math.floor(e.clientY-rc.top); const c=Math.floor(x/TS),r=Math.floor(y/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return null; return {r,c}; }
+let painting=false, lastCell=null;
+function toggle(r,c){
+  if(brush==='erase'){ layers[curLayer][r][c]=0; return; } // 橡皮擦: 清空该层格子
+  // 值: 0=空/水, 1=草地, 2=连续悬崖(①②③), 3=窄悬崖(④)
+  const v = brush==='water'?0 : brush==='grass'?1 : brush==='narrow'?3 : 2;
+  if(curLayer===0){ layers[0][r][c]=v; }
+  else { layers[curLayer][r][c] = layers[curLayer][r][c]===v ? 0 : v; } // 再点取消
+}
+cv.addEventListener('mousedown',e=>{ e.preventDefault(); const cell=cellAt(e); if(cell){ painting=true; lastCell=cell; toggle(cell.r,cell.c); draw(); } });
+cv.addEventListener('mousemove',e=>{ const cell=cellAt(e); if(cell) document.getElementById('cursor').textContent=cell.c+','+cell.r;
+  if(painting&&cell&&(cell.r!==lastCell.r||cell.c!==lastCell.c)){ toggle(cell.r,cell.c); lastCell=cell; draw(); } });
+cv.addEventListener('mouseup',()=>painting=false);
+cv.addEventListener('mouseleave',()=>painting=false);
+
+// 图层列表
+function renderLayerList(){
+  const list=document.getElementById('layerList'); list.innerHTML='';
+  for(let l=0;l<NLAYER;l++){
+    const row=document.createElement('div'); row.className='layer-row'+(l===curLayer?' on':'');
+    const sw=document.createElement('div'); sw.className='sw'; sw.style.background = LAYERDEF[l].color;
+    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=LAYERDEF[l].name+(l===curLayer?' (当前)':'');
+    const vis=document.createElement('div'); vis.className='vis';
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=layerVis[l];
+    cb.addEventListener('click',e=>{ e.stopPropagation(); layerVis[l]=cb.checked; draw(); });
+    vis.appendChild(cb);
+    row.appendChild(sw); row.appendChild(nm); row.appendChild(vis);
+    row.onclick=()=>{ curLayer=l; brush='grass'; document.getElementById('curLayer').textContent=LAYERDEF[l].name; renderLayerList(); renderBrushPanel(); draw(); };
+    list.appendChild(row);
+  }
+}
+function renderBrushPanel(){
+  const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
+  title.textContent = '第'+curLayer+'层 画笔';
+  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['cliff','连续悬崖'],['narrow','窄悬崖'],['erase','橡皮擦']]
+                            : [['grass','草地'],['cliff','连续悬崖'],['narrow','窄悬崖'],['erase','橡皮擦']];
+  box.innerHTML='';
+  for(const [id,label] of opts){
+    const b=document.createElement('button'); b.className='btn'+(brush===id?' on':''); b.textContent=label;
+    if(id==='erase') b.classList.add('red');
+    b.onclick=()=>{ brush=id; renderBrushPanel(); };
+    box.appendChild(b);
+  }
+}
+renderBrushPanel();
+document.getElementById('initWater').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=0; draw(); };
+document.getElementById('initGrass').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
+document.getElementById('demoCliff').onclick=()=>{
+  // 清空
+  for(let l=0;l<NLAYER;l++) for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[l][r][c]=0;
+  // 0层：全部草地
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1;
+  // 1层：一条连续悬崖带 (行6, 列5-9) => 左端+中间+右端
+  for(let c=5;c<=9;c++) layers[1][6][c]=1;
+  // 1层：一个孤立悬崖 (行8, 列14) => 窄
+  layers[1][8][14]=1;
+  // 图层显隐全开
+  for(let l=0;l<NLAYER;l++) layerVis[l]=true;
+  curLayer=1; document.getElementById('curLayer').textContent=LAYERDEF[1].name;
+  renderLayerList(); renderBrushPanel(); draw();
+};
+document.getElementById('applySize').onclick=()=>{
+  const nr=Math.max(4,Math.min(200,+document.getElementById('rows').value||ROWS));
+  const nc=Math.max(4,Math.min(200,+document.getElementById('cols').value||COLS));
+  for(let l=0;l<NLAYER;l++){
+    let g=layers[l]; g=g.slice(0,nr); while(g.length<nr) g.push(new Array(nc).fill(0));
+    for(let r=0;r<nr;r++){ g[r]=g[r].slice(0,nc); while(g[r].length<nc) g[r].push(0); }
+    layers[l]=g;
+  }
+  ROWS=nr; COLS=nc; resizeCanvas(); draw();
+};
+
+Promise.all([ img('assets/tiles/color1.png'),img('assets/tiles/color2.png'),img('assets/tiles/color3.png'),img('assets/tiles/color4.png'), img('assets/tiles/water_bg.png') ])
+.then(([color1,color2,color3,color4,waterbg])=>{ A={sheets:{color1,color2,color3,color4},waterbg}; resizeCanvas(); renderLayerList(); draw(); })
+.catch(e=>{ document.title='ERR '+e.message; });
+</script>
+</body>
+</html>
