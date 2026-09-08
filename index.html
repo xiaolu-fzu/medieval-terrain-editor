@@ -156,44 +156,32 @@ function draw(){
       }
     }
   }
-  // 第1/2/3层 高处地面：草面(几何同0层) + 南边界草唇 + 南向悬崖(分落草地/落水)
-  // 数据: 该层格值 1=草面/高处地面, 2=悬崖(自动判窄/左/中/右, 落草地/落水)
+  // 第1/2/3层 高处地面 —— 分开绘制：草地(值1)与悬崖(值2)各自独立，各守各的规则
   for(let l=1;l<NLAYER;l++){
     if(!layerVis[l]) continue;
     const sheet=A.sheets[LAYERDEF[l].color];
     const L=layers[l];
-    // 上下边界判断: 本格有内容, 且正下方没有本层内容(空/0层/水) => 南边界(朝下可见, 要草唇+悬崖)
-    const isSouthEdge=(r,c)=> L[r][c]!==0 && !(r+1<ROWS && L[r+1][c]!==0);
-    // 段位: 左右邻是否本层(非0) => 连续(0)/端(1)。窄或端由 wLow/eLow 决定
-    const seg=(r,c)=>{ const wLow=!( (c-1>=0)&&L[r][c-1]!==0 ); const eLow=!( (c+1<COLS)&&L[r][c+1]!==0 ); return {wLow,eLow}; };
-    // 1) 草面 + 南边界草唇: 用 maskHill 掩码(覆盖 1-9/13-15/16 竖条与孤立)。南边界(正下方无本层)该掩码 S=0 -> 得到 13/14/15/16 或 7/8/9/10-12。
-    //    若南边是水(0层该格水), 草唇用草岩唇行(y=192, id 同 maskHill 但取行3), 否则纯草唇行(y=128)。
+    // ---------- 草地(值1): 16 掩码(闭合端), 只看同层草地邻居 ----------
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      if(L[r][c]===0) continue;
-      const m=maskHill(l,r,c);
+      if(L[r][c]!==1) continue;
+      const m=maskHill(l,r,c);               // N/E/S/W 是否接同层草地(值1)
       const tp=AUTOTILE[m]||AUTOTILE["1111"];
-      if(isSouthEdge(r,c)){
-        const southIsWater = !!(r+1<ROWS && layers[0] && layers[0][r+1][c]===0);
-        const sy = southIsWater? 192 : 128;   // 落水草唇行(10-12/16) / 落地草唇行(7-9/15), 取同 x
-        ctx.drawImage(sheet, tp.sx,sy,TS,TS, c*TS,r*TS,TS,TS);
-      } else {
-        ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
-      }
+      ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
     }
-    // 2) 悬崖: 南边界格的正下方(下一格) —— 段位取该格草面掩码的 N/E/W 位; 分落草地(y=256 17-20)/落水(y=320 21-24)
+    // ---------- 悬崖(值2): 独立绘制, 段位按左右邻是否也是悬崖 ----------
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      if(!isSouthEdge(r,c)) continue;
-      if(r+1>=ROWS) continue;
-      const southIsWater = !!(layers[0]&&layers[0][r+1]&&layers[0][r+1][c]===0);
-      const sy = southIsWater? 320 : 256;
-      const m=maskHill(l,r,c);              // 南边界掩码 S=0
-      const Wsame=m[3]==='1', Esame=m[1]==='1';
+      if(L[r][c]!==2) continue;
+      const wLow=!( (c-1>=0)&&L[r][c-1]===2 );   // 左边不是悬崖 => 左端
+      const eLow=!( (c+1<COLS)&&L[r][c+1]===2 ); // 右边不是悬崖 => 右端
       let sx;
-      if(!Wsame&&!Esame) sx=512;   // 窄(或竖条) -> 16/20
-      else if(!Wsame) sx=320;      // 左端
-      else if(!Esame) sx=448;      // 右端
-      else sx=384;                 // 中
-      ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,(r+1)*TS,TS,TS);
+      if(wLow&&eLow) sx=512;      // 窄(孤立) -> 20/24
+      else if(wLow) sx=320;       // 左端 -> 17/21
+      else if(eLow) sx=448;       // 右端 -> 19/23
+      else sx=384;                // 中 -> 18/22
+      // 落水/落地: 看悬崖正下方那一格在第0层是水还是草地
+      const southWater = !!(r+1<ROWS && layers[0] && layers[0][r+1][c]===0);
+      const sy = southWater? 320 : 256;   // 落水(21-23/24) 落平地(17-19/20)
+      ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,r*TS,TS,TS);
     }
   }
   // 网格
@@ -212,8 +200,9 @@ function toggle(r,c){
     // 第0层: 只有 水(0)/草地(1)
     layers[0][r][c] = brush==='water'?0 : 1;
   } else {
-    // 1-3层: 只在空白(0)生成草面(1); 已生成(1)锁定不再点击; 悬崖由渲染自动补
-    if(layers[curLayer][r][c]===0) layers[curLayer][r][c]=1;
+    // 1-3层: 草地画笔->草面(1), 悬崖画笔->悬崖(2)。分开绘制, 同值格锁定不再重复画
+    const v = brush==='cliff' ? 2 : 1;
+    if(layers[curLayer][r][c]===0) layers[curLayer][r][c]=v;
   }
 }
 cv.addEventListener('mousedown',e=>{ e.preventDefault(); const cell=cellAt(e); if(cell){ painting=true; lastCell=cell; toggle(cell.r,cell.c); draw(); } });
@@ -242,7 +231,7 @@ function renderBrushPanel(){
   const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
   title.textContent = '第'+curLayer+'层 画笔';
   const opts = curLayer===0 ? [['water','水'],['grass','草地'],['erase','橡皮擦']]
-                            : [['kao','高处地面'],['erase','橡皮擦']];
+                            : [['grass','草地'],['cliff','悬崖'],['erase','橡皮擦']];
   box.innerHTML='';
   for(const [id,label] of opts){
     const b=document.createElement('button'); b.className='btn'+(brush===id?' on':''); b.textContent=label;
