@@ -161,7 +161,24 @@ function draw(){
     if(!layerVis[l]) continue;
     const sheet=A.sheets[LAYERDEF[l].color];
     const L=layers[l];
-    // ---------- 先画悬崖(值2)在下 ----------
+    // ---------- 先画草地(值1, 含草唇顶) ----------
+    const HI=320; // 高地草面在 sheet 列5-8, 0层AUTOTILE在列0-3, 偏移+320
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(L[r][c]!==1) continue;
+      if(r+1<ROWS && L[r+1][c]===2){
+        // 下方是悬崖 -> 草唇顶(高地区)。落水/落地: 悬崖格在第0层是水还是草地
+        const cliffCellWater = !!(layers[0] && layers[0][r+1][c]===0);
+        const sy = cliffCellWater? 192 : 128;   // 落水草唇行(10-12/16) / 落地纯草唇行(7-9/15)
+        const m=maskHill(l,r,c);
+        const tp=AUTOTILE[m]||AUTOTILE["1111"];
+        ctx.drawImage(sheet, tp.sx+HI,sy,TS,TS, c*TS,r*TS,TS,TS);
+      } else {
+        const m=maskHill(l,r,c);
+        const tp=AUTOTILE[m]||AUTOTILE["1111"];
+        ctx.drawImage(sheet, tp.sx+HI,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
+      }
+    }
+    // ---------- 再画悬崖(值2)在最上 ----------
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==2) continue;
       const wLow=!( (c-1>=0)&&L[r][c-1]===2 );   // 左边不是悬崖 => 左端
@@ -171,27 +188,9 @@ function draw(){
       else if(wLow) sx=320;       // 左端 -> 17/21
       else if(eLow) sx=448;       // 右端 -> 19/23
       else sx=384;                // 中 -> 18/22
-      // 落水/落地: 看悬崖正下方那一格在第0层是水还是草地
       const southWater = !!(r+1<ROWS && layers[0] && layers[0][r+1][c]===0);
       const sy = southWater? 320 : 256;   // 落水(21-23/24) 落平地(17-19/20)
       ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,r*TS,TS,TS);
-    }
-    // ---------- 草地(值1): 若正下方是悬崖(2) -> 用草唇衔接(选落水/落地); 否则普通草面(16掩码) ----------
-    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      if(L[r][c]!==1) continue;
-      const HI=320; // 高地草面在 sheet 列5-8, 0层AUTOTILE在列0-3, 偏移+320
-      if(r+1<ROWS && L[r+1][c]===2){
-        // 下方是悬崖 -> 草唇(高地区)。落水/落地: 悬崖格在第0层是水还是草地
-        const cliffCellWater = !!(layers[0] && layers[0][r+1][c]===0);
-        const sy = cliffCellWater? 192 : 128;   // 落水草唇行(10-12/16,高地区y=192; 落地纯草唇行7-9/15,y=128)
-        const m=maskHill(l,r,c);
-        const tp=AUTOTILE[m]||AUTOTILE["1111"];
-        ctx.drawImage(sheet, tp.sx+HI,sy,TS,TS, c*TS,r*TS,TS,TS);
-      } else {
-        const m=maskHill(l,r,c);
-        const tp=AUTOTILE[m]||AUTOTILE["1111"];
-        ctx.drawImage(sheet, tp.sx+HI,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
-      }
     }
   }
   // 网格
