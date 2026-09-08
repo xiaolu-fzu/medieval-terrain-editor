@@ -204,6 +204,24 @@ function draw(){
       const sy = southWater? 320 : 256;   // 落水(21-23/24) 落平地(17-19/20)
       ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,r*TS,TS,TS);
     }
+    // ---------- 楼梯(值3): 2格堆叠, 画在当前层(低层), 爬到上一层; 用 color1 素材 ----------
+    const stairSheet=A.sheets['color1'];
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(L[r][c]!==3) continue;
+      let right=true;
+      const upL=curLayer+1;
+      if(upL<NLAYER && layers[upL]){
+        const up=layers[upL];
+        const hasL = up[r-1] && up[r-1][c-1]!==0;
+        const hasR = up[r-1] && up[r-1][c+1]!==0;
+        if(hasL && !hasR) right=false;
+        else if(hasR && !hasL) right=true;
+        else right=true;
+      }
+      const topX = right?192:0, botX = right?192:0;
+      if(r-1>=0) ctx.drawImage(stairSheet, topX,256,TS,TS, c*TS,(r-1)*TS,TS,TS);
+      ctx.drawImage(stairSheet, botX,320,TS,TS, c*TS,r*TS,TS,TS);
+    }
   }
   // 网格
   ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
@@ -217,6 +235,7 @@ function cellAt(e){ const rc=cv.getBoundingClientRect(); const x=Math.floor(e.cl
 let painting=false, lastCell=null;
 function toggle(r,c){
   if(brush==='erase'){ layers[curLayer][r][c]=0; return; }
+  if(brush==='stair'){ layers[curLayer][r][c]=3; return; }  // 楼梯(爬到上一层)
   if(curLayer===0){
     // 第0层: 只有 水(0)/草地(1)
     layers[0][r][c] = brush==='water'?0 : 1;
@@ -251,8 +270,8 @@ function renderLayerList(){
 function renderBrushPanel(){
   const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
   title.textContent = '第'+curLayer+'层 画笔';
-  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['erase','橡皮擦']]
-                            : [['grass','草地'],['cliff','悬崖'],['erase','橡皮擦']];
+  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['stair','楼梯'],['erase','橡皮擦']]
+                            : [['grass','草地'],['cliff','悬崖'],['stair','楼梯'],['erase','橡皮擦']];
   box.innerHTML='';
   for(const [id,label] of opts){
     const b=document.createElement('button'); b.className='btn'+(brush===id?' on':''); b.textContent=label;
