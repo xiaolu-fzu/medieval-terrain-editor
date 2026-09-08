@@ -212,8 +212,8 @@ function toggle(r,c){
     // 第0层: 只有 水(0)/草地(1)
     layers[0][r][c] = brush==='water'?0 : 1;
   } else {
-    // 1-3层: 0=空, 1=草面(高处地面) — 悬崖由草面自动生成, 不独立存值
-    layers[curLayer][r][c] = layers[curLayer][r][c]===1 ? 0 : 1;
+    // 1-3层: 只在空白(0)生成草面(1); 已生成(1)锁定不再点击; 悬崖由渲染自动补
+    if(layers[curLayer][r][c]===0) layers[curLayer][r][c]=1;
   }
 }
 cv.addEventListener('mousedown',e=>{ e.preventDefault(); const cell=cellAt(e); if(cell){ painting=true; lastCell=cell; toggle(cell.r,cell.c); draw(); } });
