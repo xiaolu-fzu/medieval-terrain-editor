@@ -178,17 +178,29 @@ function draw(){
         ctx.drawImage(sheet, tp.sx+HI,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
       }
     }
-    // ---------- 再画悬崖(值2)在最上 ----------
+    // ---------- 再画悬崖(值2)在最上：基础段位(按左右悬崖邻) + 草唇顶修正(左右草唇顶) ----------
+    const isLipTop=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false; return L[rr][cc]===1 && !(rr+1<ROWS && L[rr+1][cc]===1); };
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==2) continue;
-      const wLow=!( (c-1>=0)&&L[r][c-1]===2 );   // 左边不是悬崖 => 左端
-      const eLow=!( (c+1<COLS)&&L[r][c+1]===2 ); // 右边不是悬崖 => 右端
-      let sx;
-      if(wLow&&eLow) sx=512;      // 窄(孤立) -> 20/24
-      else if(wLow) sx=320;       // 左端 -> 17/21
-      else if(eLow) sx=448;       // 右端 -> 19/23
-      else sx=384;                // 中 -> 18/22
+      // 基础段位: 左右邻是否悬崖(2)
+      const wCliff=!!(c-1>=0&&L[r][c-1]===2), eCliff=!!(c+1<COLS&&L[r][c+1]===2);
+      // 基础段位索引(落地): 0=窄(20) 1=左端(17) 2=中(18) 3=右端(19)
+      let base;
+      if(!wCliff&&!eCliff) base='narrow'; else if(wCliff&&!eCliff) base='right'; else if(!wCliff&&eCliff) base='left'; else base='mid';
+      // 草唇顶修正: 看左右邻是否草唇顶
+      const lipW=isLipTop(r,c-1), lipE=isLipTop(r,c+1);
+      // 落水/落地
       const southWater = !!(r+1<ROWS && layers[0] && layers[0][r+1][c]===0);
+      let sx;
+      if(base==='mid') sx=384;                 // 18/22 不变
+      else if(base==='left'){ sx = lipW? 384 : 320; }      // 17/21: 左草唇顶->18/22
+      else if(base==='right'){ sx = lipE? 384 : 448; }     // 19/23: 右草唇顶->18/22
+      else { // narrow(20/24)
+        if(lipW&&lipE) sx=384;                 // 左右都草唇顶 -> 18/22
+        else if(lipW) sx=448;                  // 左草唇顶 -> 19/23
+        else if(lipE) sx=320;                  // 右草唇顶 -> 17/21
+        else sx=512;                           // 无草唇顶 -> 20/24
+      }
       const sy = southWater? 320 : 256;   // 落水(21-23/24) 落平地(17-19/20)
       ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,r*TS,TS,TS);
     }
