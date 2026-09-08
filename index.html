@@ -161,14 +161,7 @@ function draw(){
     if(!layerVis[l]) continue;
     const sheet=A.sheets[LAYERDEF[l].color];
     const L=layers[l];
-    // ---------- 草地(值1): 16 掩码(闭合端), 只看同层草地邻居 ----------
-    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      if(L[r][c]!==1) continue;
-      const m=maskHill(l,r,c);               // N/E/S/W 是否接同层草地(值1)
-      const tp=AUTOTILE[m]||AUTOTILE["1111"];
-      ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
-    }
-    // ---------- 悬崖(值2): 独立绘制, 段位按左右邻是否也是悬崖 ----------
+    // ---------- 先画悬崖(值2)在下 ----------
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==2) continue;
       const wLow=!( (c-1>=0)&&L[r][c-1]===2 );   // 左边不是悬崖 => 左端
@@ -182,6 +175,112 @@ function draw(){
       const southWater = !!(r+1<ROWS && layers[0] && layers[0][r+1][c]===0);
       const sy = southWater? 320 : 256;   // 落水(21-23/24) 落平地(17-19/20)
       ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,r*TS,TS,TS);
+    }
+    // ---------- 草地(值1): 后画, 叠悬崖之上 ----------
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(L[r][c]!==1) continue;
+      const m=maskHill(l,r,c);
+      const tp=AUTOTILE[m]||AUTOTILE["1111"];
+      ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
+    }
+  }
+  // 网格
+  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
+  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*TS+.5,0);ctx.lineTo(c*TS+.5,H());ctx.stroke();}
+  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*TS+.5);ctx.lineTo(W(),r*TS+.5);ctx.stroke();}
+  let cnt=0; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(layers[curLayer][r][c]) cnt++;
+  document.getElementById('landCount').textContent=cnt;
+}
+function resizeCanvas(){ cv.width=W(); cv.height=H(); }
+function cellAt(e){ const rc=cv.getBoundingClientRect(); const x=Math.floor(e.clientX-rc.left),y=Math.floor(e.clientY-rc.top); const c=Math.floor(x/TS),r=Math.floor(y/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return null; return {r,c}; }
+let painting=false, lastCell=null;
+function toggle(r,c){
+  if(brush==='erase'){ layers[curLayer][r][c]=0; return; }
+  if(curLayer===0){
+    // 第0层: 只有 水(0)/草地(1)
+    layers[0][r][c] = brush==='water'?0 : 1;
+  } else {
+    // 1-3层: 草地画笔->草面(1), 悬崖画笔->悬崖(2)。分开绘制, 同值格锁定不再重复画
+    const v = brush==='cliff' ? 2 : 1;
+    if(layers[curLayer][r][c]===0) layers[curLayer][r][c]=v;
+  }
+}
+cv.addEventListener('mousedown',e=>{ e.preventDefault(); const cell=cellAt(e); if(cell){ painting=true; lastCell=cell; toggle(cell.r,cell.c); draw(); } });
+cv.addEventListener('mousemove',e=>{ const cell=cellAt(e); if(cell) document.getElementById('cursor').textContent=cell.c+','+cell.r;
+  if(painting&&cell&&(cell.r!==lastCell.r||cell.c!==lastCell.c)){ toggle(cell.r,cell.c); lastCell=cell; draw(); } });
+cv.addEventListener('mouseup',()=>painting=false);
+cv.addEventListener('mouseleave',()=>painting=false);
+
+// 图层列表
+function renderLayerList(){
+  const list=document.getElementById('layerList'); list.innerHTML='';
+  for(let l=0;l<NLAYER;l++){
+    const row=document.createElement('div'); row.className='layer-row'+(l===curLayer?' on':'');
+    const sw=document.createElement('div'); sw.className='sw'; sw.style.background = LAYERDEF[l].color;
+    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=LAYERDEF[l].name+(l===curLayer?' (当前)':'');
+    const vis=document.createElement('div'); vis.className='vis';
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=layerVis[l];
+    cb.addEventListener('click',e=>{ e.stopPropagation(); layerVis[l]=cb.checked; draw(); });
+    vis.appendChild(cb);
+    row.appendChild(sw); row.appendChild(nm); row.appendChild(vis);
+    row.onclick=()=>{ curLayer=l; brush='grass'; document.getElementById('curLayer').textContent=LAYERDEF[l].name; renderLayerList(); renderBrushPanel(); draw(); };
+    list.appendChild(row);
+  }
+}
+function renderBrushPanel(){
+  const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
+  title.textContent = '第'+curLayer+'层 画笔';
+  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['erase','橡皮擦']]
+                            : [['grass','草地'],['cliff','悬崖'],['erase','橡皮擦']];
+  box.innerHTML='';
+  for(const [id,label] of opts){
+    const b=document.createElement('button'); b.className='btn'+(brush===id?' on':''); b.textContent=label;
+    if(id==='erase') b.classList.add('red');
+    b.onclick=()=>{ brush=id; renderBrushPanel(); };
+    box.appendChild(b);
+  }
+}
+renderBrushPanel();
+document.getElementById('initWater').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=0; draw(); };
+document.getElementById('initGrass').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
+document.getElementById('demoCliff').onclick=()=>{
+  // 清空
+  for(let l=0;l<NLAYER;l++) for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[l][r][c]=0;
+  // 0层：全部草地
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1;
+  // 1层：一条连续悬崖带 (行6, 列5-9) => 左端+中间+右端
+  for(let c=5;c<=9;c++) layers[1][6][c]=1;
+  // 1层：一个孤立悬崖 (行8, 列14) => 窄
+  layers[1][8][14]=1;
+  // 图层显隐全开
+  for(let l=0;l<NLAYER;l++) layerVis[l]=true;
+  curLayer=1; document.getElementById('curLayer').textContent=LAYERDEF[1].name;
+  renderLayerList(); renderBrushPanel(); draw();
+};
+document.getElementById('applySize').onclick=()=>{
+  const nr=Math.max(4,Math.min(200,+document.getElementById('rows').value||ROWS));
+  const nc=Math.max(4,Math.min(200,+document.getElementById('cols').value||COLS));
+  for(let l=0;l<NLAYER;l++){
+    let g=layers[l]; g=g.slice(0,nr); while(g.length<nr) g.push(new Array(nc).fill(0));
+    for(let r=0;r<nr;r++){ g[r]=g[r].slice(0,nc); while(g[r].length<nc) g[r].push(0); }
+    layers[l]=g;
+  }
+  ROWS=nr; COLS=nc; resizeCanvas(); draw();
+};
+
+Promise.all([ img('assets/tiles/color1.png'),img('assets/tiles/color2.png'),img('assets/tiles/color3.png'),img('assets/tiles/color4.png'), img('assets/tiles/water_bg.png') ])
+.then(([color1,color2,color3,color4,waterbg])=>{ A={sheets:{color1,color2,color3,color4},waterbg}; resizeCanvas(); renderLayerList(); draw(); })
+.catch(e=>{ document.title='ERR '+e.message; });
+</script>
+</body>
+</html>
+
+    // ---------- 草地(值1): 后画, 叠在悬崖之上 ----------
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(L[r][c]!==1) continue;
+      const m=maskHill(l,r,c);               // N/E/S/W 是否接同层草地(值1)
+      const tp=AUTOTILE[m]||AUTOTILE["1111"];
+      ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
     }
   }
   // 网格
