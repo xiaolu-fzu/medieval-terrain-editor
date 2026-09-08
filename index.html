@@ -44,7 +44,7 @@
 <div class="app">
   <div class="topbar">
     <h1>地形编辑器 <span class="dot">·</span> 图层</h1>
-    <span class="hint">选层绘制 · 勾选显示 · 第0层选水/草地/悬崖</span>
+    <span class="hint">选层绘制 · 勾选显示 · 第0层 水/草地 · 1-3层 草地/高处地面</span>
   </div>
 
   <div class="main">
@@ -65,7 +65,7 @@
       </div>
       <div class="group">
         <h3>示例</h3>
-        <button class="btn" id="demoCliff">悬崖示例(连续+孤立)</button>
+        <button class="btn" id="demoCliff">高处地面 示例</button>
       </div>
       <div class="group">
         <h3>第0层 初始</h3>
@@ -156,33 +156,36 @@ function draw(){
       }
     }
   }
-  // 第1/2/3层叠加：先草地顶面，后南边自动生成悬崖
+  // 第1/2/3层 高处地面：草面(几何同0层) + 南边界草唇 + 南向悬崖(分落草地/落水)
+  // 数据: 该层格值 1=草面/高处地面, 2=悬崖(自动判窄/左/中/右, 落草地/落水)
   for(let l=1;l<NLAYER;l++){
     if(!layerVis[l]) continue;
     const sheet=A.sheets[LAYERDEF[l].color];
-    // 规则: 该格是"南边界"(本层有内容 且 南邻不在本层) => 用草唇; 否则用普通草地掩码
-    //       南边界格的正下方 => 悬崖(左/中/右/窄 与草唇同套水平规则)
     const L=layers[l];
+    // 上下边界判断: 本格有内容, 且正下方没有本层内容(空/0层/水) => 南边界(朝下可见, 要草唇+悬崖)
     const isSouthEdge=(r,c)=> L[r][c]!==0 && !(r+1<ROWS && L[r+1][c]!==0);
-    // 段位(wLow/eLow): 值3(窄)强制窄, 值2按左右邻
-    const seg=(r,c)=>{ const narrow=L[r][c]===3; const wLow=narrow?true:!( (c-1>=0)&&L[r][c-1]!==0 ); const eLow=narrow?true:!( (c+1<COLS)&&L[r][c+1]!==0 ); return {wLow,eLow}; };
-    // 1) 草顶(带边缘特效): 南边界用草唇, 其它用普通草地掩码
+    // 段位: 左右邻是否本层(非0) => 连续(0)/端(1)。窄或端由 wLow/eLow 决定
+    const seg=(r,c)=>{ const wLow=!( (c-1>=0)&&L[r][c-1]!==0 ); const eLow=!( (c+1<COLS)&&L[r][c+1]!==0 ); return {wLow,eLow}; };
+    // 1) 草面: 南边界用草唇(分落草地/落水), 其它用 16 掩码草面
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]===0) continue;
       const {wLow,eLow}=seg(r,c);
+      const sx = lipSX(wLow,eLow);
       if(isSouthEdge(r,c)){
-        ctx.drawImage(sheet, lipSX(wLow,eLow),192,TS,TS, c*TS,r*TS,TS,TS);
+        const southIsWater = !!(r+1<ROWS && layers[0] && layers[0][r+1][c]===0);
+        const sy = southIsWater? 192 : 128;   // 水->草岩唇(行3 10-12/16), 0层草地->纯草唇(行2 7-9/15)
+        ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,r*TS,TS,TS);
       } else {
         const m=maskHill(l,r,c); const tp=AUTOTILE[m]||AUTOTILE["1111"];
         ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
       }
     }
-    // 2) 悬崖: 南边界格的正下方(下一格)
+    // 2) 悬崖: 南边界格的正下方(下一格) —— 分落草地(y=256 17-20) / 落水(y=320 21-24)
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(!isSouthEdge(r,c)) continue;
       if(r+1>=ROWS) continue;
-      const southWater = !!(layers[0]&&layers[0][r+1]&&layers[0][r+1][c]===0);
-      const sy = southWater?320:256;
+      const southIsWater = !!(layers[0]&&layers[0][r+1]&&layers[0][r+1][c]===0);
+      const sy = southIsWater? 320 : 256;
       const {wLow,eLow}=seg(r,c);
       ctx.drawImage(sheet, cliffSX(wLow,eLow),sy,TS,TS, c*TS,(r+1)*TS,TS,TS);
     }
@@ -203,8 +206,8 @@ function toggle(r,c){
     // 第0层: 只有 水(0)/草地(1)
     layers[0][r][c] = brush==='water'?0 : 1;
   } else {
-    // 1-3层: 0=空,1=草地,2=连续悬崖,3=窄悬崖
-    const v = brush==='grass'?1 : brush==='narrow'?3 : 2;
+    // 1-3层: 0=空, 1=草地, 2=悬崖(渲染时按左右邻自动判 连续/窄/左右端, 并按下方水/平地选 17-20/21-24)
+    const v = brush==='grass'?1 : 2;
     layers[curLayer][r][c] = layers[curLayer][r][c]===v ? 0 : v;
   }
 }
@@ -234,7 +237,7 @@ function renderBrushPanel(){
   const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
   title.textContent = '第'+curLayer+'层 画笔';
   const opts = curLayer===0 ? [['water','水'],['grass','草地'],['erase','橡皮擦']]
-                            : [['grass','草地'],['cliff','连续悬崖'],['narrow','窄悬崖'],['erase','橡皮擦']];
+                            : [['grass','草地'],['cliff','高处地面'],['erase','橡皮擦']];
   box.innerHTML='';
   for(const [id,label] of opts){
     const b=document.createElement('button'); b.className='btn'+(brush===id?' on':''); b.textContent=label;

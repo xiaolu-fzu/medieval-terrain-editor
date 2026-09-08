@@ -1,0 +1,444 @@
+{
+  "tileSize": 64,
+  "semantics": {
+    "same": "同高地/同草地(海拔一致或更高)",
+    "other": "水/更低海拔/越界",
+    "any": "任意(过渡瓦片)"
+  },
+  "flatGround": {
+    "1": {
+      "col": 0,
+      "row": 0,
+      "role": "top-left outer corner",
+      "mask": "0110",
+      "N": "other",
+      "E": "same",
+      "S": "same",
+      "W": "other"
+    },
+    "2": {
+      "col": 1,
+      "row": 0,
+      "role": "top outer edge",
+      "mask": "0111",
+      "N": "other",
+      "E": "same",
+      "S": "same",
+      "W": "same"
+    },
+    "3": {
+      "col": 2,
+      "row": 0,
+      "role": "top-right outer corner",
+      "mask": "0011",
+      "N": "other",
+      "E": "other",
+      "S": "same",
+      "W": "same"
+    },
+    "4": {
+      "col": 0,
+      "row": 1,
+      "role": "left outer edge",
+      "mask": "1110",
+      "N": "same",
+      "E": "same",
+      "S": "same",
+      "W": "other"
+    },
+    "5": {
+      "col": 1,
+      "row": 1,
+      "role": "center (surrounded by land)",
+      "mask": "1111",
+      "N": "same",
+      "E": "same",
+      "S": "same",
+      "W": "same"
+    },
+    "6": {
+      "col": 2,
+      "row": 1,
+      "role": "right outer edge",
+      "mask": "1011",
+      "N": "same",
+      "E": "other",
+      "S": "same",
+      "W": "same"
+    },
+    "7": {
+      "col": 0,
+      "row": 2,
+      "role": "bottom-left outer corner",
+      "mask": "1100",
+      "N": "same",
+      "E": "same",
+      "S": "other",
+      "W": "other"
+    },
+    "8": {
+      "col": 1,
+      "row": 2,
+      "role": "bottom outer edge",
+      "mask": "1101",
+      "N": "same",
+      "E": "same",
+      "S": "other",
+      "W": "same"
+    },
+    "9": {
+      "col": 2,
+      "row": 2,
+      "role": "bottom-right outer corner",
+      "mask": "1001",
+      "N": "same",
+      "E": "other",
+      "S": "other",
+      "W": "same"
+    },
+    "10": {
+      "col": 0,
+      "row": 3,
+      "role": "1-tile-high horizontal strip left end",
+      "mask": "0100",
+      "N": "other",
+      "E": "same",
+      "S": "other",
+      "W": "other"
+    },
+    "11": {
+      "col": 1,
+      "row": 3,
+      "role": "1-tile-high horizontal strip middle",
+      "mask": "0101",
+      "N": "other",
+      "E": "same",
+      "S": "other",
+      "W": "same"
+    },
+    "12": {
+      "col": 2,
+      "row": 3,
+      "role": "1-tile-high horizontal strip right end",
+      "mask": "0001",
+      "N": "other",
+      "E": "other",
+      "S": "other",
+      "W": "same"
+    },
+    "13": {
+      "col": 3,
+      "row": 0,
+      "role": "1-tile-wide vertical strip top end",
+      "mask": "0010",
+      "N": "other",
+      "E": "other",
+      "S": "same",
+      "W": "other"
+    },
+    "14": {
+      "col": 3,
+      "row": 1,
+      "role": "1-tile-wide vertical strip middle",
+      "mask": "1010",
+      "N": "same",
+      "E": "other",
+      "S": "same",
+      "W": "other"
+    },
+    "15": {
+      "col": 3,
+      "row": 2,
+      "role": "1-tile-wide vertical strip bottom end",
+      "mask": "1000",
+      "N": "same",
+      "E": "other",
+      "S": "other",
+      "W": "other"
+    },
+    "16": {
+      "col": 3,
+      "row": 3,
+      "role": "isolated 1x1 island (water on all sides)",
+      "mask": "0000",
+      "N": "other",
+      "E": "other",
+      "S": "other",
+      "W": "other"
+    }
+  },
+  "elevatedGround": {
+    "1": {
+      "col": 5,
+      "row": 0,
+      "role": "top-left outer corner (grass surface)",
+      "mask": "0110",
+      "N": "other",
+      "E": "same",
+      "S": "same",
+      "W": "other"
+    },
+    "2": {
+      "col": 6,
+      "row": 0,
+      "role": "top outer edge (grass surface)",
+      "mask": "0111",
+      "N": "other",
+      "E": "same",
+      "S": "same",
+      "W": "same"
+    },
+    "3": {
+      "col": 7,
+      "row": 0,
+      "role": "top-right outer corner (grass surface)",
+      "mask": "0011",
+      "N": "other",
+      "E": "other",
+      "S": "same",
+      "W": "same"
+    },
+    "4": {
+      "col": 5,
+      "row": 1,
+      "role": "left outer edge (grass surface)",
+      "mask": "1110",
+      "N": "same",
+      "E": "same",
+      "S": "same",
+      "W": "other"
+    },
+    "5": {
+      "col": 6,
+      "row": 1,
+      "role": "center (grass surface)",
+      "mask": "1111",
+      "N": "same",
+      "E": "same",
+      "S": "same",
+      "W": "same"
+    },
+    "6": {
+      "col": 7,
+      "row": 1,
+      "role": "right outer edge (grass surface)",
+      "mask": "1011",
+      "N": "same",
+      "E": "other",
+      "S": "same",
+      "W": "same"
+    },
+    "7": {
+      "col": 5,
+      "row": 2,
+      "role": "bottom-left outer corner (grass-to-cliff lip)",
+      "mask": "1100",
+      "N": "same",
+      "E": "same",
+      "S": "other",
+      "W": "other"
+    },
+    "8": {
+      "col": 6,
+      "row": 2,
+      "role": "bottom outer edge (grass-to-cliff lip)",
+      "mask": "1101",
+      "N": "same",
+      "E": "same",
+      "S": "other",
+      "W": "same"
+    },
+    "9": {
+      "col": 7,
+      "row": 2,
+      "role": "bottom-right outer corner (grass-to-cliff lip)",
+      "mask": "1001",
+      "N": "same",
+      "E": "other",
+      "S": "other",
+      "W": "same"
+    },
+    "10": {
+      "col": 5,
+      "row": 3,
+      "role": "cliff top edge left (grass meets rock face)",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "11": {
+      "col": 6,
+      "row": 3,
+      "role": "cliff top edge middle",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "12": {
+      "col": 7,
+      "row": 3,
+      "role": "cliff top edge right",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "13": {
+      "col": 8,
+      "row": 0,
+      "role": "1-tile-wide vertical grass strip top end",
+      "mask": "0010",
+      "N": "other",
+      "E": "other",
+      "S": "same",
+      "W": "other"
+    },
+    "14": {
+      "col": 8,
+      "row": 1,
+      "role": "1-tile-wide vertical grass strip middle",
+      "mask": "1010",
+      "N": "same",
+      "E": "other",
+      "S": "same",
+      "W": "other"
+    },
+    "15": {
+      "col": 8,
+      "row": 2,
+      "role": "1-tile-wide vertical grass strip bottom end",
+      "mask": "1000",
+      "N": "same",
+      "E": "other",
+      "S": "other",
+      "W": "other"
+    },
+    "16": {
+      "col": 8,
+      "row": 3,
+      "role": "1-tile-wide cliff top edge (narrow pillar lip)",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "17": {
+      "col": 5,
+      "row": 4,
+      "role": "cliff face left terminating on walkable ground below",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "18": {
+      "col": 6,
+      "row": 4,
+      "role": "cliff face middle terminating on walkable ground below",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "19": {
+      "col": 7,
+      "row": 4,
+      "role": "cliff face right terminating on walkable ground below",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "20": {
+      "col": 8,
+      "row": 4,
+      "role": "1-tile-wide cliff face bottom on walkable ground",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "21": {
+      "col": 5,
+      "row": 5,
+      "role": "cliff face left terminating in water",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "22": {
+      "col": 6,
+      "row": 5,
+      "role": "cliff face middle terminating in water",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "23": {
+      "col": 7,
+      "row": 5,
+      "role": "cliff face right terminating in water",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    },
+    "24": {
+      "col": 8,
+      "row": 5,
+      "role": "1-tile-wide cliff face bottom in water (with foam)",
+      "mask": null,
+      "N": "any",
+      "E": "any",
+      "S": "any",
+      "W": "any"
+    }
+  },
+  "southEdge": {
+    "grassLip": {
+      "cliffs": [
+        17,
+        18,
+        19,
+        20
+      ],
+      "lipBase": {
+        "mid": 8,
+        "left": 7,
+        "right": 9,
+        "narrow": 15
+      },
+      "note": "南邻是0层草地 -> 草唇用行2(7/8/9/15), 悬崖行4(17-20)"
+    },
+    "waterLip": {
+      "cliffs": [
+        21,
+        22,
+        23,
+        24
+      ],
+      "lipBase": {
+        "mid": 11,
+        "left": 10,
+        "right": 12,
+        "narrow": 16
+      },
+      "note": "南邻是水 -> 草唇用行3(10/11/12/16), 悬崖行5(21-24)"
+    }
+  }
+}
