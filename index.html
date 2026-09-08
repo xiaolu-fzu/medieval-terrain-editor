@@ -165,10 +165,10 @@ function draw(){
     const HI=320; // 高地草面在 sheet 列5-8, 0层AUTOTILE在列0-3, 偏移+320
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==1) continue;
-      // 草唇顶 = 草地朝下(南)露出的边(下方不是本层草地), 由草地本身决定, 不依赖悬崖; 画悬崖不影响它
+      // 草唇顶 = 草地朝下(南)露出的边(下方不是本层草地), 由草地本身决定, 不依赖悬崖/0层; 画悬崖不影响它
       if(r+1<ROWS && L[r+1][c]!==1){
-        const cliffCellWater = !!(layers[0] && layers[0][r+1][c]===0);
-        const sy = cliffCellWater? 192 : 128;   // 落水草唇行(10-12/16) / 落地纯草唇行(7-9/15)
+        // 草唇顶固定用 纯草唇行(y=128, 7-9/15 grass-to-cliff lip); 不受落水/落地影响
+        const sy = 128;
         const m=maskHill(l,r,c);
         const tp=AUTOTILE[m]||AUTOTILE["1111"];
         ctx.drawImage(sheet, tp.sx+HI,sy,TS,TS, c*TS,r*TS,TS,TS);
