@@ -206,9 +206,8 @@ function toggle(r,c){
     // 第0层: 只有 水(0)/草地(1)
     layers[0][r][c] = brush==='water'?0 : 1;
   } else {
-    // 1-3层: 0=空, 1=草地, 2=悬崖(渲染时按左右邻自动判 连续/窄/左右端, 并按下方水/平地选 17-20/21-24)
-    const v = brush==='grass'?1 : 2;
-    layers[curLayer][r][c] = layers[curLayer][r][c]===v ? 0 : v;
+    // 1-3层: 0=空, 1=草面(高处地面) — 悬崖由草面自动生成, 不独立存值
+    layers[curLayer][r][c] = layers[curLayer][r][c]===1 ? 0 : 1;
   }
 }
 cv.addEventListener('mousedown',e=>{ e.preventDefault(); const cell=cellAt(e); if(cell){ painting=true; lastCell=cell; toggle(cell.r,cell.c); draw(); } });
@@ -237,7 +236,7 @@ function renderBrushPanel(){
   const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
   title.textContent = '第'+curLayer+'层 画笔';
   const opts = curLayer===0 ? [['water','水'],['grass','草地'],['erase','橡皮擦']]
-                            : [['grass','草地'],['cliff','高处地面'],['erase','橡皮擦']];
+                            : [['kao','高处地面'],['erase','橡皮擦']];
   box.innerHTML='';
   for(const [id,label] of opts){
     const b=document.createElement('button'); b.className='btn'+(brush===id?' on':''); b.textContent=label;
