@@ -119,8 +119,8 @@ function mask0(r,c){ const isL=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) ret
 // 高地层掩码(该层自身/下层任一为陆 => 同方块? 简化：该层有内容算陆)
 function maskHill(l,r,c){
   const L=layers[l];
-  const same=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false; return L[rr][cc]!==0; };
-  // 顶部草地：N/E/W 按同层邻居判 same；南向强制视为"接悬崖"(即 S=0 处理，让草顶用能接崖的边) —— 但为了顶面完整，南向也按同层判断，若不同则用边缘草
+  // 草地掩码只看 草地(值1), 悬崖(值2)/空(0) 都不算草地邻居, 保证草面/草唇顶不受悬崖影响
+  const same=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false; return L[rr][cc]===1; };
   const N=same(r-1,c)?1:0, E=same(r,c+1)?1:0, S=same(r+1,c)?1:0, W=same(r,c-1)?1:0;
   return ""+N+E+S+W;
 }
@@ -165,8 +165,8 @@ function draw(){
     const HI=320; // 高地草面在 sheet 列5-8, 0层AUTOTILE在列0-3, 偏移+320
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==1) continue;
-      // 草唇顶 = 草地朝下(南)露出的边(下方不是本层草地), 由草地本身决定, 不依赖悬崖/0层; 画悬崖不影响它
-      if(r+1<ROWS && L[r+1][c]!==1){
+      // 草唇顶 = 草地 上面有同层草(N=1) 且 下面露出(S=0); 仅此才用草唇(7-9/15)。横条(上下都空)用普通掩码(10-12)
+      if((r-1>=0 && L[r-1][c]===1) && (r+1<ROWS && L[r+1][c]!==1)){
         // 草唇顶固定用 纯草唇行(y=128, 7-9/15 grass-to-cliff lip); 不受落水/落地影响
         const sy = 128;
         const m=maskHill(l,r,c);
