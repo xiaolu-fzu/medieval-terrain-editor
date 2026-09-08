@@ -139,15 +139,15 @@ function draw(){
       const v=layers[0][r][c];
       if(v===1||v===2){ const m=mask0(r,c); const tp=AUTOTILE[m]||AUTOTILE["1111"]; ctx.drawImage(A.sheets['color1'], tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS); }
     }
-    // 悬崖标记(值2=连续, 值3=窄): 顶面无缝中心草(1111) + 正下方悬崖(落水320/落地256)
+    // 悬崖标记(值2=连续, 值3=窄): 顶面具边缘特效草地 + 正下方悬崖(落水320/落地256)
     const L0=layers[0];
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L0[r][c]!==2 && L0[r][c]!==3) continue;
       const narrow = L0[r][c]===3;
       const wLow = narrow? true : !( (c-1>=0)&&L0[r][c-1]!==0 );
       const eLow = narrow? true : !( (c+1<COLS)&&L0[r][c+1]!==0 );
-      // 顶面: 中心草(无缝)
-      const tp=AUTOTILE["1111"];
+      // 顶面: 草地掩码(带水岸/边缘特效)
+      const m=mask0(r,c); const tp=AUTOTILE[m]||AUTOTILE["1111"];
       ctx.drawImage(A.sheets['color1'], tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
       if(r+1<ROWS){
         const southWater = L0[r+1][c]===0;
@@ -166,11 +166,16 @@ function draw(){
     const isSouthEdge=(r,c)=> L[r][c]!==0 && !(r+1<ROWS && L[r+1][c]!==0);
     // 段位(wLow/eLow): 值3(窄)强制窄, 值2按左右邻
     const seg=(r,c)=>{ const narrow=L[r][c]===3; const wLow=narrow?true:!( (c-1>=0)&&L[r][c-1]!==0 ); const eLow=narrow?true:!( (c+1<COLS)&&L[r][c+1]!==0 ); return {wLow,eLow}; };
-    // 1) 草顶(无缝): 顶面统一用中心草(1111)，保证悬崖顶面连续无缝; 只在正下方画岩壁
+    // 1) 草顶(带边缘特效): 南边界用草唇, 其它用普通草地掩码
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]===0) continue;
-      const tp=AUTOTILE["1111"];   // 中心草, 无缝
-      ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
+      const {wLow,eLow}=seg(r,c);
+      if(isSouthEdge(r,c)){
+        ctx.drawImage(sheet, lipSX(wLow,eLow),192,TS,TS, c*TS,r*TS,TS,TS);
+      } else {
+        const m=maskHill(l,r,c); const tp=AUTOTILE[m]||AUTOTILE["1111"];
+        ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
+      }
     }
     // 2) 悬崖: 南边界格的正下方(下一格)
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
@@ -193,11 +198,15 @@ function resizeCanvas(){ cv.width=W(); cv.height=H(); }
 function cellAt(e){ const rc=cv.getBoundingClientRect(); const x=Math.floor(e.clientX-rc.left),y=Math.floor(e.clientY-rc.top); const c=Math.floor(x/TS),r=Math.floor(y/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return null; return {r,c}; }
 let painting=false, lastCell=null;
 function toggle(r,c){
-  if(brush==='erase'){ layers[curLayer][r][c]=0; return; } // 橡皮擦: 清空该层格子
-  // 值: 0=空/水, 1=草地, 2=连续悬崖(①②③), 3=窄悬崖(④)
-  const v = brush==='water'?0 : brush==='grass'?1 : brush==='narrow'?3 : 2;
-  if(curLayer===0){ layers[0][r][c]=v; }
-  else { layers[curLayer][r][c] = layers[curLayer][r][c]===v ? 0 : v; } // 再点取消
+  if(brush==='erase'){ layers[curLayer][r][c]=0; return; }
+  if(curLayer===0){
+    // 第0层: 只有 水(0)/草地(1)
+    layers[0][r][c] = brush==='water'?0 : 1;
+  } else {
+    // 1-3层: 0=空,1=草地,2=连续悬崖,3=窄悬崖
+    const v = brush==='grass'?1 : brush==='narrow'?3 : 2;
+    layers[curLayer][r][c] = layers[curLayer][r][c]===v ? 0 : v;
+  }
 }
 cv.addEventListener('mousedown',e=>{ e.preventDefault(); const cell=cellAt(e); if(cell){ painting=true; lastCell=cell; toggle(cell.r,cell.c); draw(); } });
 cv.addEventListener('mousemove',e=>{ const cell=cellAt(e); if(cell) document.getElementById('cursor').textContent=cell.c+','+cell.r;
@@ -224,7 +233,7 @@ function renderLayerList(){
 function renderBrushPanel(){
   const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
   title.textContent = '第'+curLayer+'层 画笔';
-  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['cliff','连续悬崖'],['narrow','窄悬崖'],['erase','橡皮擦']]
+  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['erase','橡皮擦']]
                             : [['grass','草地'],['cliff','连续悬崖'],['narrow','窄悬崖'],['erase','橡皮擦']];
   box.innerHTML='';
   for(const [id,label] of opts){
