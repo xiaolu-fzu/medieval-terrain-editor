@@ -189,9 +189,9 @@ function draw(){
     // ---------- 再画悬崖(值2)在最上：基础段位(按左右悬崖邻) + 草唇顶修正(左右草唇顶) ----------
     // 草唇顶(悬崖修正): 草地(1)或楼梯(3/4)都算, 悬崖(2)/空(0)不算 —— 楼梯横向等效草唇顶
     const isLipTop=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false;
-      const v=L[rr][cc]; if(v===1||v===3||v===4) return true;
-      // 下层楼梯(3/4)也等效草唇顶(楼梯在低层, 悬崖在上层横向见它)
-      if(l-1>=0 && layers[l-1] && layers[l-1][rr] && (layers[l-1][rr][cc]===3||layers[l-1][rr][cc]===4)) return true;
+      const v=L[rr][cc]; if(v===1) return true;
+      // 整个楼梯(3/4/5)在任何层都视作草唇顶
+      for(let ll=0;ll<NLAYER;ll++){ const g=layers[ll]; if(g && g[rr] && (g[rr][cc]===3||g[rr][cc]===4||g[rr][cc]===5)) return true; }
       return false; };
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==2) continue;
