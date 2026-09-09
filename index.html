@@ -199,7 +199,7 @@ function drawFoam(l){
     else { nearWater = (r+1<ROWS && L0[r+1][c]===0); }   // 落水悬崖: 下方0层是水
     if(!nearWater) continue;
     const fr=Math.floor(animTime*5)%16, k=(r*7+c*3)%16, f=((fr+k)%16)*F;
-    const sZ=TS*2.4, bx=c*TS+TS/2, byy=r*TS+TS/2;   // 中心=该地形格中心(望天层)
+    const sZ=TS*1.3, bx=c*TS+TS/2, byy=r*TS+TS/2;   // 中心=该地形格中心(望天层)
     ctx.drawImage(wf, f,0,F,F, bx-sZ/2, byy-sZ/2, sZ, sZ);
   }
 }
