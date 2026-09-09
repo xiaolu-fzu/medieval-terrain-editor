@@ -462,11 +462,23 @@ cv.addEventListener('mousedown',e=>{ e.preventDefault(); const p=ptrXY(e); paint
 cv.addEventListener('mousemove',e=>{
   const p=ptrXY(e);
   document.getElementById('cursor').textContent=Math.floor(p.x/TS)+','+Math.floor(p.y/TS);
+  if(tab==='units'){
+    if(unitBrushTool==='glove' && selectedUnit){ selectedUnit.x=p.x; selectedUnit.y=p.y; draw(); return; }
+    if(unitBrushTool==='place' && landscapeMode==='free' && painting){
+      let ui=-1,b=1e9; for(let i=0;i<units.length;i++){ const u=units[i]; if(u.l!==curLayer)continue; const d=Math.hypot(u.x-p.x,u.y-p.y); if(d<b){b=d;ui=i;} }
+      if(ui>=0){ units[ui].x=p.x; units[ui].y=p.y; }   // 长按拖动=>移动最近角色
+      draw(); return;
+    }
+    return;
+  }
   if(tab==='landscape'){
-    if(tab==='units'){ if(unitBrushTool==='glove' && selectedUnit){ selectedUnit.x=p.x; selectedUnit.y=p.y; draw(); } else if(unitBrushTool==='place' && landscapeMode==='free' && painting){ placeAt(p.x,p.y); draw(); } return; }
-    if(landBrush==='glove' && selectedLand){ selectedLand.x=p.x; selectedLand.y=p.y; draw(); }   // 手套: 拖动移动
-    else if(landBrush==='erase' && painting){ placeAt(p.x,p.y); draw(); }                        // 擦除: 按住拖动连续擦
-    else if(landBrush==='place' && landscapeMode==='free' && painting){ placeAt(p.x,p.y); draw(); } // 自由连续放
+    if(landBrush==='glove' && selectedLand){ selectedLand.x=p.x; selectedLand.y=p.y; draw(); return; }
+    if(landBrush==='erase' && painting){ placeAt(p.x,p.y); draw(); return; }
+    if(landBrush==='place' && landscapeMode==='free' && painting){
+      let li=-1,b=1e9; for(let i=0;i<landscape.length;i++){ const s=landscape[i]; if(s.l!==curLayer)continue; const d=Math.hypot(s.x-p.x,s.y-p.y); if(d<b){b=d;li=i;} }
+      if(li>=0){ landscape[li].x=p.x; landscape[li].y=p.y; }   // 长按拖动=>移动最近景观
+      draw(); return;
+    }
     return;
   }
   if(painting){ const c=Math.floor(p.x/TS),r=Math.floor(p.y/TS); if(c!==lastXY.c||r!==lastXY.r){ toggle(r,c); lastXY={c,r}; draw(); } }
