@@ -498,7 +498,7 @@ document.getElementById('landScale').oninput=e=>{ landScale=Math.max(0.2,Math.mi
 function renderLandList(){
   const box=document.getElementById('landList'); box.innerHTML='';
   if(!A.landscape) return;
-  const cats=[['bush','灌木'],['tree','树'],['rock','岩石'],['cloud','云'],['building','建筑']];
+  const cats=[['bush','灌木'],['tree','树'],['stump','树桩'],['rock','岩石'],['cloud','云'],['gold','金矿'],['resource','资源'],['duck','鸭子'],['wrock','水中岩石'],['sheep','绵羊'],['building','建筑']];
   for(const [kind,label] of cats){
     const cfg=A.landscape[kind]; if(!cfg) continue;
     for(let i=0;i<cfg.imgs.length;i++){
@@ -583,17 +583,30 @@ Promise.all([
   img('assets/landscape/rock1.png'),img('assets/landscape/rock2.png'),img('assets/landscape/cloud1.png'),img('assets/landscape/wrock1.png'),
   img('assets/landscape/buildings/castle.png'),img('assets/landscape/buildings/house1.png'),img('assets/landscape/buildings/house2.png'),img('assets/landscape/buildings/house3.png'),
   img('assets/landscape/buildings/monastery.png'),img('assets/landscape/buildings/barracks.png'),img('assets/landscape/buildings/archery.png'),img('assets/landscape/buildings/tower.png'),
-  img('assets/tiles/water_foam.png'),img('assets/tiles/shadow.png')
-]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower, waterFoam, shadowImg])=>{
+  img('assets/tiles/water_foam.png'),img('assets/tiles/shadow.png'),
+  // 补全场景素材
+  img('assets/landscape/tree3.png'),img('assets/landscape/tree4.png'),
+  img('assets/landscape/stump1.png'),img('assets/landscape/stump2.png'),img('assets/landscape/stump3.png'),img('assets/landscape/stump4.png'),
+  img('assets/landscape/gold_resource.png'),img('assets/landscape/gold_stone1.png'),img('assets/landscape/gold_stone2.png'),img('assets/landscape/gold_stone3.png'),
+  img('assets/landscape/gold_stone4.png'),img('assets/landscape/gold_stone5.png'),img('assets/landscape/gold_stone6.png'),
+  img('assets/landscape/wood_resource.png'),img('assets/landscape/meat_resource.png'),img('assets/landscape/tool1.png'),img('assets/landscape/tool2.png'),img('assets/landscape/tool3.png'),img('assets/landscape/tool4.png'),
+  img('assets/landscape/rubber_duck.png'),img('assets/landscape/wrock3.png'),img('assets/landscape/wrock4.png'),img('assets/landscape/sheep_idle.png')
+]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower, waterFoam, shadowImg, lsTree3,lsTree4, sStump1,sStump2,sStump3,sStump4, gResource,gStone1,gStone2,gStone3,gStone4,gStone5,gStone6, wWood,wMeat,wTool1,wTool2,wTool3,wTool4, sDuck,sWrock3,sWrock4,sSheep])=>{
   A={sheets:{color1,color2,color3,color4},waterbg,waterFoam,shadow:shadowImg};
   A.landscape={
     bush:{imgs:[lsBush1,lsBush2], fw:128, fh:128, frames:8, fps:8, kind:'bush', label:'灌木'},
-    tree:{imgs:[lsTree1,lsTree2], fw:192, fh:256, frames:8, fps:6, kind:'tree', label:'树'},
+    tree:{imgs:[lsTree1,lsTree2,lsTree3,lsTree4], sizes:[[192,256],[192,256],[192,192],[192,192]], frames:8, fps:6, kind:'tree', label:'树'},
     rock:{imgs:[lsRock1,lsRock2], fw:64, fh:64, frames:1, fps:0, kind:'rock', label:'岩石'},
     cloud:{imgs:[lsCloud1], fw:576, fh:256, frames:1, fps:0, kind:'cloud', label:'云'},
     building:{ imgs:[bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower],
       sizes:[[320,256],[128,192],[128,192],[128,192],[192,320],[192,256],[192,256],[128,256]],
       frames:1, fps:0, kind:'building', label:'建筑', names:['城堡','民房1','民房2','民房3','修道院','兵营','箭楼','塔'] },
+    stump:{imgs:[sStump1,sStump2,sStump3,sStump4], sizes:[[192,256],[192,256],[192,256],[192,256]], frames:1, fps:0, kind:'stump', label:'树桩'},
+    gold:{imgs:[gResource,gStone1,gStone2,gStone3,gStone4,gStone5,gStone6], sizes:[[128,128],[128,128],[128,128],[128,128],[128,128],[128,128],[128,128]], frames:1, fps:0, kind:'gold', label:'金矿', names:['金堆','金矿1','金矿2','金矿3','金矿4','金矿5','金矿6']},
+    resource:{imgs:[wWood,wMeat,wTool1,wTool2,wTool3,wTool4], fw:64, fh:64, frames:1, fps:0, kind:'resource', label:'资源', names:['木头','肉','工具1','工具2','工具3','工具4']},
+    duck:{imgs:[sDuck], fw:32, fh:32, frames:3, fps:6, kind:'duck', label:'鸭子'},
+    wrock:{imgs:[lsWrock1,sWrock3,sWrock4], fw:64, fh:64, frames:16, fps:8, kind:'wrock', label:'水中岩石'},
+    sheep:{imgs:[sSheep], fw:128, fh:128, frames:6, fps:6, kind:'sheep', label:'绵羊'},
   };
   resizeCanvas(); renderLayerList(); renderBrushPanel(); draw(); startLoop();
 })
