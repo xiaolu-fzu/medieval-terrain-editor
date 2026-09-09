@@ -363,9 +363,15 @@ cv.addEventListener('mousemove',e=>{
   }
   if(painting){ const c=Math.floor(p.x/TS),r=Math.floor(p.y/TS); if(c!==lastXY.c||r!==lastXY.r){ toggle(r,c); lastXY={c,r}; draw(); } }
 });
-cv.addEventListener('mouseup',()=>{ if(!(tab==='landscape'&&landBrush==='glove')) selectedLand=null; pain=false; painting=false; document.getElementById('landScaleSel').value=selectedLand?(selectedLand.scale||1):landScale; });
+cv.addEventListener('mouseup',()=>{ // 松手即放下: 清选中, 景观固定在拖放位置
+  if(tab==='landscape' && landBrush==='glove'){ selectedLand=null; }
+  painting=false; document.getElementById('landScaleSel').value=landScale; });
 cv.addEventListener('mouseleave',()=>painting=false);
-cv.addEventListener('wheel',e=>{ if(tab==='landscape' && selectedLand){ e.preventDefault(); const d=e.deltaY>0?-0.1:0.1; selectedLand.scale=Math.max(0.2,Math.min(4,(selectedLand.scale||1)+d)); document.getElementById('landScaleSel').value=selectedLand.scale; draw(); } },{passive:false});
+cv.addEventListener('wheel',e=>{ if(tab==='landscape' && landBrush==='glove'){ e.preventDefault(); const p=ptrXY(e);
+  let sl=selectedLand;
+  if(!sl){ const li=landscape.findIndex(s=> s.l===curLayer && Math.abs(s.x-p.x)<TS/2 && Math.abs(s.y-p.y)<TS/2); if(li>=0){ sl=landscape[li]; selectedLand=sl; } }
+  if(sl){ const d=e.deltaY>0?-0.1:0.1; sl.scale=Math.max(0.2,Math.min(4,(sl.scale||1)+d)); document.getElementById('landScaleSel').value=sl.scale; draw(); }
+} },{passive:false});
 // 工具切换
 function setLandTool(t){ landBrush=t; document.getElementById('ltPlace').classList.toggle('on',t==='place'); document.getElementById('ltErase').classList.toggle('on',t==='erase'); document.getElementById('ltGlove').classList.toggle('on',t==='glove'); }
 document.getElementById('ltPlace').onclick=()=>setLandTool('place');
