@@ -213,7 +213,7 @@ function maskHill(l,r,c){
 // 水泡: 望天层(浮于水面之上, 地形之下) —— 画在 该层落水地形格 中心
 // 0层: 草/悬崖 邻水(四向); 1-3层: 悬崖 落水(其下方0层是水)
 function drawFoam(l){
-  if(l!==1) return;                       // 只有1层悬崖才有机会有水泡
+  if(l!==0 && l!==1) return;                       // 只有1层悬崖才有机会有水泡
   if(!waterFoamOn || !A.waterFoam) return;
   const wf=A.waterFoam, F=192, L=layers[l], L0=layers[0];
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
