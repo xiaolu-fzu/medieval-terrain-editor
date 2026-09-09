@@ -125,7 +125,7 @@
       </div>
       <div class="group">
         <h3>示例</h3>
-        <button class="btn" id="demoCliff">高处地面 示例</button>
+        <button class="btn" id="demoCliff">示例1</button>
       </div>
       <div class="group">
         <h3>第0层 初始</h3>
@@ -609,22 +609,21 @@ function exportJson(){
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='terrain-map.json'; a.click(); URL.revokeObjectURL(a.href);
 }
+function applyData(d){
+  if(!d.layers) throw new Error('缺少 layers');
+  COLS=d.cols||COLS; ROWS=d.rows||ROWS; curLayer=d.curLayer||0; layerVis=d.layerVis||layerVis;
+  layers=[]; for(let l=0;l<NLAYER;l++){ const g=[]; for(let r=0;r<ROWS;r++){ g.push(new Array(COLS).fill(0)); } layers.push(g); }
+  for(let l=0;l<Math.min(NLAYER,d.layers.length);l++){ for(let r=0;r<Math.min(ROWS,d.layers[l].length);r++){ for(let c=0;c<Math.min(COLS,d.layers[l][r].length);c++) layers[l][r][c]=d.layers[l][r][c]; } }
+  stairs=(d.stairs||[]).map(s=>Object.assign({},s));
+  landscape=(d.landscape||[]).map(s=>Object.assign({},s));
+  units=(d.units||[]).map(s=>Object.assign({},s));
+  document.getElementById('rows').value=ROWS; document.getElementById('cols').value=COLS;
+  resizeCanvas(); renderLayerList(); renderBrushPanel(); renderLandList(); draw();
+}
 function importJson(file){
   if(!file) return;
   const reader=new FileReader();
-  reader.onload=()=>{ try{
-    const d=JSON.parse(reader.result);
-    if(!d.layers) throw new Error('缺少 layers');
-    COLS=d.cols||COLS; ROWS=d.rows||ROWS; curLayer=d.curLayer||0; layerVis=d.layerVis||layerVis;
-    // 重建 layers(确保 NLAYER)
-    layers=[]; for(let l=0;l<NLAYER;l++){ const g=[]; for(let r=0;r<ROWS;r++){ g.push(new Array(COLS).fill(0)); } layers.push(g); }
-    for(let l=0;l<Math.min(NLAYER,d.layers.length);l++){ for(let r=0;r<Math.min(ROWS,d.layers[l].length);r++){ for(let c=0;c<Math.min(COLS,d.layers[l][r].length);c++) layers[l][r][c]=d.layers[l][r][c]; } }
-    stairs=(d.stairs||[]).map(s=>Object.assign({},s));
-    landscape=(d.landscape||[]).map(s=>Object.assign({},s));
-  units=(d.units||[]).map(s=>Object.assign({},s));
-    document.getElementById('rows').value=ROWS; document.getElementById('cols').value=COLS;
-    resizeCanvas(); renderLayerList(); renderBrushPanel(); renderLandList(); draw();
-  }catch(e){ document.title='导入失败: '+e.message; } };
+  reader.onload=()=>{ try{ applyData(JSON.parse(reader.result)); }catch(e){ document.title='导入失败: '+e.message; } };
   reader.readAsText(file);
 }
 document.getElementById('foamScale').oninput=e=>{ foamScale=Math.max(0.4,Math.min(4,+e.target.value||1)); draw(); };
@@ -637,18 +636,8 @@ document.getElementById('importFile').addEventListener('change',e=>{ importJson(
 document.getElementById('initWater').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=0; draw(); };
 document.getElementById('initGrass').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
 document.getElementById('demoCliff').onclick=()=>{
-  // 清空
-  for(let l=0;l<NLAYER;l++) for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[l][r][c]=0;
-  // 0层：全部草地
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1;
-  // 1层：一条连续悬崖带 (行6, 列5-9) => 左端+中间+右端
-  for(let c=5;c<=9;c++) layers[1][6][c]=1;
-  // 1层：一个孤立悬崖 (行8, 列14) => 窄
-  layers[1][8][14]=1;
-  // 图层显隐全开
-  for(let l=0;l<NLAYER;l++) layerVis[l]=true;
-  curLayer=1; document.getElementById('curLayer').textContent=LAYERDEF[1].name;
-  renderLayerList(); renderBrushPanel(); draw();
+  // 示例1: 加载 terrain-map .json
+  fetch('terrain-map .json').then(r=>r.json()).then(d=>{ try{ applyData(d); }catch(e){ document.title='示例1失败: '+e.message; } }).catch(e=>{ document.title='示例1加载失败: '+e.message; });
 };
 document.getElementById('applySize').onclick=()=>{
   const nr=Math.max(4,Math.min(200,+document.getElementById('rows').value||ROWS));
