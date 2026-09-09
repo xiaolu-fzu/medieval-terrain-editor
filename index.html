@@ -72,7 +72,21 @@
         <div class="tabs">
           <button class="tab on" id="tabTerrain">地形</button>
           <button class="tab" id="tabLandscape">景观</button>
+          <button class="tab" id="tabUnits">角色</button>
         </div>
+      </div>
+      <!-- 角色面板 -->
+      <div id="unitPanel" style="display:none">
+        <div class="group">
+          <h3>角色工具</h3>
+          <div class="tabs" id="unitTools">
+            <button class="tab on" id="utPlace"><span class="ico">🖌️</span>放置</button>
+            <button class="tab" id="utErase"><span class="ico">🧹</span>擦除</button>
+            <button class="tab" id="utGlove"><span class="ico">🧤</span>手套</button>
+          </div>
+          <div class="field"><label>大小</label><input type="number" id="unitScale" value="1" min="0.3" max="4" step="0.1"></div>
+        </div>
+        <div class="group"><h3>角色</h3><div id="unitList"></div></div>
       </div>
       <!-- 景观面板 -->
       <div id="landPanel" style="display:none">
@@ -157,6 +171,9 @@ let layers=[]; for(let l=0;l<NLAYER;l++){ const g=[]; for(let r=0;r<ROWS;r++) g.
 let layerVis=[true,true,true,true]; // 显隐
 let stairs=[]; // 楼梯额外贴图: {l, r, c, dir(3左/4右)}, 不影响 layers 地形数据
 let landscape=[]; // 景观: {l, r, c, kind, id} 与地形互不删除, 叠加渲染遮挡
+let units=[]; // 角色: {l, x, y, role, scale} 独立于景观/地形
+let unitBrush=null; // 当前角色选择 {role}
+let unitScaleVal=1; // 角色缩放
 let animTick=0; // 动画帧计数
 let animTime=0; // 动画累计秒(驱动帧)
  // 动画累计秒(驱动平滑帧)
@@ -349,6 +366,19 @@ function draw(){
       else ctx.drawImage(im, 0,0,baseW,baseH, cx-fw/2, cy-fh, fw, fh);
     }
   }
+  // ---------- 角色(待机帧动画, 叠加在最上层): 底部中心锚定 ----------
+  if(A.units){
+    for(const u of units){
+      if(!layerVis[u.l]) continue;
+      const cfg=A.units[u.role]; if(!cfg) continue;
+      const im=cfg.imgs[0];
+      const s=u.scale||1;
+      const fw=cfg.fw*s, fh=cfg.fh*s;
+      const fr=Math.floor(animTime*cfg.fps) % cfg.frames;   // 待机帧(时间驱动)
+      const cx=u.x, cy=u.y;
+      ctx.drawImage(im, fr*cfg.fw,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh);  // 底部中心
+    }
+  }
   // 网格
   ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
   for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*TS+.5,0);ctx.lineTo(c*TS+.5,H());ctx.stroke();}
@@ -393,6 +423,16 @@ function toggle(r,c){
 }
 function ptrXY(e){ const rc=cv.getBoundingClientRect(); return { x:e.clientX-rc.left, y:e.clientY-rc.top }; }
 function placeAt(px,py){
+  if(tab==='units'){
+    let x=px, y=py;
+    if(landscapeMode==='geom'){ x=Math.floor(px/TS)*TS+TS/2; y=Math.floor(py/TS)*TS+TS/2; }
+    let ui=-1, best=1e9;
+    for(let i=0;i<units.length;i++){ const u=units[i]; if(u.l!==curLayer) continue; const d=Math.hypot(u.x-x,u.y-y); if(d<best){best=d; ui=i;} }
+    if(unitBrushTool==='erase'){ if(ui>=0&&best<TS*0.8){ units.splice(ui,1); } return; }
+    if(unitBrushTool==='glove'){ selectedUnit = (best<TS*1.5)? units[ui] : null; if(selectedUnit) document.getElementById('unitScale').value=selectedUnit.scale||1; return; }
+    if(unitBrush && best>=TS*0.2){ units.push({ l:curLayer, x:x, y:y, role:unitBrush.role, scale:unitScaleVal }); }
+    return;
+  }
   if(tab==='landscape'){
     // 像素坐标: 几何吸附到格子中心, 自由用像素
     let x=px, y=py;
@@ -423,6 +463,7 @@ cv.addEventListener('mousemove',e=>{
   const p=ptrXY(e);
   document.getElementById('cursor').textContent=Math.floor(p.x/TS)+','+Math.floor(p.y/TS);
   if(tab==='landscape'){
+    if(tab==='units'){ if(unitBrushTool==='glove' && selectedUnit){ selectedUnit.x=p.x; selectedUnit.y=p.y; draw(); } else if(unitBrushTool==='place' && landscapeMode==='free' && painting){ placeAt(p.x,p.y); draw(); } return; }
     if(landBrush==='glove' && selectedLand){ selectedLand.x=p.x; selectedLand.y=p.y; draw(); }   // 手套: 拖动移动
     else if(landBrush==='erase' && painting){ placeAt(p.x,p.y); draw(); }                        // 擦除: 按住拖动连续擦
     else if(landBrush==='place' && landscapeMode==='free' && painting){ placeAt(p.x,p.y); draw(); } // 自由连续放
@@ -430,8 +471,9 @@ cv.addEventListener('mousemove',e=>{
   }
   if(painting){ const c=Math.floor(p.x/TS),r=Math.floor(p.y/TS); if(c!==lastXY.c||r!==lastXY.r){ toggle(r,c); lastXY={c,r}; draw(); } }
 });
-cv.addEventListener('mouseup',()=>{ // 松手即放下: 清选中, 景观固定在拖放位置
+cv.addEventListener('mouseup',()=>{ // 松手即放下
   if(tab==='landscape' && landBrush==='glove'){ selectedLand=null; }
+  if(tab==='units' && unitBrushTool==='glove'){ selectedUnit=null; }
   painting=false; document.getElementById('landScaleSel').value=landScale; });
 cv.addEventListener('mouseleave',()=>painting=false);
 cv.addEventListener('wheel',e=>{ if(tab==='landscape' && landBrush==='glove'){ e.preventDefault(); const p=ptrXY(e);
@@ -482,18 +524,45 @@ function switchTab(t){
   tab=t;
   document.getElementById('tabTerrain').classList.toggle('on', t==='terrain');
   document.getElementById('tabLandscape').classList.toggle('on', t==='landscape');
+  document.getElementById('tabUnits').classList.toggle('on', t==='units');
   document.getElementById('landPanel').style.display = t==='landscape' ? '' : 'none';
-  // 地形 tab 显示画笔面板(brushTitle/brushBtns 的父 group), 景观隐藏; 反之亦然
+  document.getElementById('unitPanel').style.display = t==='units' ? '' : 'none';
   const brushGroup=document.getElementById('brushTitle').closest('.group');
   if(brushGroup) brushGroup.style.display = t==='terrain' ? '' : 'none';
   if(t==='landscape') renderLandList();
+  if(t==='units') renderUnitList();
 }
 document.getElementById('tabTerrain').onclick=()=>switchTab('terrain');
 document.getElementById('tabLandscape').onclick=()=>switchTab('landscape');
+document.getElementById('tabUnits').onclick=()=>switchTab('units');
 function setLandMode(m){ landscapeMode=m; document.getElementById('modeGeom').classList.toggle('on',m==='geom'); document.getElementById('modeFree').classList.toggle('on',m==='free'); }
 document.getElementById('modeGeom').onclick=()=>setLandMode('geom');
 document.getElementById('modeFree').onclick=()=>setLandMode('free');
-document.getElementById('landScale').oninput=e=>{ landScale=Math.max(0.2,Math.min(4,+e.target.value||1)); };
+// ---------- 角色: 列表 + 工具 ----------
+let unitBrushTool='place'; // place|erase|glove
+let selectedUnit=null;
+function renderUnitList(){
+  const box=document.getElementById('unitList'); box.innerHTML='';
+  if(!A.units) return;
+  for(const role of Object.keys(A.units)){
+    const cfg=A.units[role];
+    const it=document.createElement('div'); it.className='land-item'+(unitBrush&&unitBrush.role===role?' on':'');
+    const c=document.createElement('canvas'); c.width=72;c.height=48; const cc=c.getContext('2d'); cc.imageSmoothingEnabled=false;
+    cc.drawImage(cfg.imgs[0], 0,0,cfg.fw,cfg.fh, 12,0,48,48);
+    it.appendChild(c);
+    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=cfg.label;
+    it.appendChild(nm);
+    it.onclick=()=>{ unitBrush={role}; renderUnitList(); };
+    box.appendChild(it);
+  }
+}
+function setUnitTool(t){ unitBrushTool=t; document.getElementById('utPlace').classList.toggle('on',t==='place'); document.getElementById('utErase').classList.toggle('on',t==='erase'); document.getElementById('utGlove').classList.toggle('on',t==='glove'); }
+document.getElementById('utPlace').onclick=()=>setUnitTool('place');
+document.getElementById('utErase').onclick=()=>setUnitTool('erase');
+document.getElementById('utGlove').onclick=()=>setUnitTool('glove');
+document.getElementById('unitScale').oninput=e=>{ unitScaleVal=Math.max(0.3,Math.min(4,+e.target.value||1)); };
+
+document.getElementById('landScale').oninput=document.getElementById('landScale').oninput=e=>{ landScale=Math.max(0.2,Math.min(4,+e.target.value||1)); };
 
 function renderLandList(){
   const box=document.getElementById('landList'); box.innerHTML='';
@@ -590,8 +659,9 @@ Promise.all([
   img('assets/landscape/gold_resource.png'),img('assets/landscape/gold_stone1.png'),img('assets/landscape/gold_stone2.png'),img('assets/landscape/gold_stone3.png'),
   img('assets/landscape/gold_stone4.png'),img('assets/landscape/gold_stone5.png'),img('assets/landscape/gold_stone6.png'),
   img('assets/landscape/wood_resource.png'),img('assets/landscape/meat_resource.png'),img('assets/landscape/tool1.png'),img('assets/landscape/tool2.png'),img('assets/landscape/tool3.png'),img('assets/landscape/tool4.png'),
-  img('assets/landscape/rubber_duck.png'),img('assets/landscape/wrock3.png'),img('assets/landscape/wrock4.png'),img('assets/landscape/sheep_idle.png')
-]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower, waterFoam, shadowImg, lsTree3,lsTree4, sStump1,sStump2,sStump3,sStump4, gResource,gStone1,gStone2,gStone3,gStone4,gStone5,gStone6, wWood,wMeat,wTool1,wTool2,wTool3,wTool4, sDuck,sWrock3,sWrock4,sSheep])=>{
+  img('assets/landscape/rubber_duck.png'),img('assets/landscape/wrock3.png'),img('assets/landscape/wrock4.png'),img('assets/landscape/sheep_idle.png'),
+  img('assets/units/archer.png'),img('assets/units/lancer.png'),img('assets/units/monk.png'),img('assets/units/pawn.png'),img('assets/units/warrior.png')
+]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower, waterFoam, shadowImg, lsTree3,lsTree4, sStump1,sStump2,sStump3,sStump4, gResource,gStone1,gStone2,gStone3,gStone4,gStone5,gStone6, wWood,wMeat,wTool1,wTool2,wTool3,wTool4, sDuck,sWrock3,sWrock4,sSheep, uArcher,uLancer,uMonk,uPawn,uWarrior])=>{
   A={sheets:{color1,color2,color3,color4},waterbg,waterFoam,shadow:shadowImg};
   A.landscape={
     bush:{imgs:[lsBush1,lsBush2], fw:128, fh:128, frames:8, fps:8, kind:'bush', label:'灌木'},
@@ -607,6 +677,14 @@ Promise.all([
     duck:{imgs:[sDuck], fw:32, fh:32, frames:3, fps:6, kind:'duck', label:'鸭子'},
     wrock:{imgs:[lsWrock1,sWrock3,sWrock4], fw:64, fh:64, frames:16, fps:8, kind:'wrock', label:'水中岩石'},
     sheep:{imgs:[sSheep], fw:128, fh:128, frames:6, fps:6, kind:'sheep', label:'绵羊'},
+  };
+  // 角色(待机帧动画): imgs[role], 帧宽/帧数 per role; 底部锚定
+  A.units={
+    archer:{imgs:[uArcher], fw:192, fh:192, frames:6, fps:6, label:'弓箭手'},
+    lancer:{imgs:[uLancer], fw:320, fh:320, frames:12, fps:8, label:'枪兵'},
+    monk:{imgs:[uMonk], fw:192, fh:192, frames:6, fps:6, label:'僧侣'},
+    pawn:{imgs:[uPawn], fw:192, fh:192, frames:8, fps:6, label:'步兵'},
+    warrior:{imgs:[uWarrior], fw:192, fh:192, frames:8, fps:6, label:'武士'},
   };
   resizeCanvas(); renderLayerList(); renderBrushPanel(); draw(); startLoop();
 })
