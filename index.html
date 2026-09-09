@@ -430,7 +430,7 @@ function placeAt(px,py){
     for(let i=0;i<units.length;i++){ const u=units[i]; if(u.l!==curLayer) continue; const d=Math.hypot(u.x-x,u.y-y); if(d<best){best=d; ui=i;} }
     if(unitBrushTool==='erase'){ if(ui>=0&&best<TS*0.8){ units.splice(ui,1); } return; }
     if(unitBrushTool==='glove'){ selectedUnit = (best<TS*1.5)? units[ui] : null; if(selectedUnit) document.getElementById('unitScale').value=selectedUnit.scale||1; return; }
-    if(unitBrush && best>=TS*0.2){ units.push({ l:curLayer, x:x, y:y, role:unitBrush.role, scale:unitScaleVal }); }
+    if(unitBrush){ units.push({ l:curLayer, x:x, y:y, role:unitBrush.role, scale:unitScaleVal }); }
     return;
   }
   if(tab==='landscape'){
@@ -453,7 +453,7 @@ function placeAt(px,py){
       return;
     }
     // 放置: 仅当光标附近(TS*0.7内)无景观才放(避免重叠); 非几何尺寸大也按中心附近判断
-    if(landscapeBrush && best>=TS*0.2){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale }); }
+    if(landscapeBrush){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale }); }
     return;
   }
   const c=Math.floor(px/TS), r=Math.floor(py/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return; toggle(r,c);
