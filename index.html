@@ -372,14 +372,16 @@ function placeAt(px,py){
     // 像素坐标: 几何吸附到格子中心, 自由用像素
     let x=px, y=py;
     if(landscapeMode==='geom'){ x=Math.floor(px/TS)*TS+TS/2; y=Math.floor(py/TS)*TS+TS/2; }
-    // 擦除: 删光标半径内所有景观; 手套: 就近选(不论是否点中); 放置: 空隙放
+    // 找光标最近的本层景观
     let li=-1, best=1e9;
     for(let i=0;i<landscape.length;i++){ const s=landscape[i]; if(s.l!==curLayer) continue;
       const d=Math.hypot(s.x-x, s.y-y);
       if(d<best){ best=d; li=i; }
-      if(landBrush==='erase' && d<TS*0.7){ landscape.splice(i,1); i--; }
     }
-    if(landBrush==='erase'){ if(selectedLand && !landscape.includes(selectedLand)) selectedLand=null; return; }
+    if(landBrush==='erase'){ // 只删最近的一个(拖动时mousemove连续触发=>连续删), 不误删其它
+      if(li>=0 && best<TS*0.8){ landscape.splice(li,1); if(selectedLand===landscape) selectedLand=null; }
+      return;
+    }
     if(landBrush==='glove'){
       selectedLand = (best<TS*1.5)? landscape[li] : null;
       if(selectedLand) document.getElementById('landScaleSel').value=selectedLand.scale||1;
