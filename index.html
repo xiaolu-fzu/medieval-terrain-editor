@@ -214,21 +214,21 @@ function draw(){
       }
     }
   }
-  // ---------- 水泡特效(落水地形下方自动生成, 帧错开, 最下层叠加) ----------
+  // ---------- 水泡特效: 落水地形(任意层草/悬崖 其下方0层是水)的 水格 自动生成, 帧错开, 最下层叠加 ----------
   if(waterFoamOn && A.waterFoam){
-    const wf=A.waterFoam; const F=192; // 每帧192
+    const wf=A.waterFoam; const F=192; // 16帧,每帧192
     const L0=layers[0];
-    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      if(r+1>=ROWS) continue;
-      const top=L0[r][c];
-      const below=L0[r+1][c];
-      // 落水地形: 上方格是草(1)或悬崖(2/3), 且下方格是水(0) => 在下方水格叠水泡
-      if((top===1||top===2||top===3) && below===0){
-        const fr=Math.floor(animTime*6)%16;            // 帧错开(每格不同起帧: 用坐标)
-        const k=(r*7+c*3)%16;                          // 错帧
-        const f=((fr+k)%16)*F;
-        ctx.drawImage(wf, f,0,F,F, c*TS-F/2+TS/2, (r+1)*TS-F/2+TS/2, F, F);
-      }
+    for(let r=0;r<ROWS-1;r++) for(let c=0;c<COLS;c++){
+      if(L0[r+1][c]!==0) continue;      // 下方那格必须是 水(0)
+      // 上方 r 行任一层的草(1/悬崖2/3) 落水 => 在该水格(r+1,c)叠水泡
+      let falling=false;
+      for(let l=0;l<NLAYER;l++){ const v=layers[l][r][c]; if(v===1||v===2||v===3){ falling=true; break; } }
+      if(!falling) continue;
+      const fr=Math.floor(animTime*5)%16;
+      const k=(r*7+c*3)%16;                          // 每格错帧
+      const f=((fr+k)%16)*F;
+      // 底部中心对齐到 水格(r+1,c)的下边
+      ctx.drawImage(wf, f,0,F,F, c*TS-F/2+TS/2, (r+1)*TS+F/2-F/2, F, F);
     }
   }
   // 第1/2/3层 高处地面 —— 分开绘制：草地(值1)与悬崖(值2)各自独立，各守各的规则
