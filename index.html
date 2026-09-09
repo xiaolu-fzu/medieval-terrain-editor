@@ -286,14 +286,18 @@ function draw(){
       if(!layerVis[item.l]) continue;
       const cfg=A.landscape[item.kind];
       if(!cfg) continue;
-      const im=cfg.imgs[item.id % cfg.imgs.length];
-      const s=item.scale||1;                 // 景观缩放(1=原大小)
-      const cx=item.x, cy=item.y;            // 像素中心
-      const fw=cfg.fw*s, fh=cfg.fh*s;        // 缩放后尺寸
+      const id0=item.id % cfg.imgs.length;
+      const im=cfg.imgs[id0];
+      // 每张建筑尺寸不同用 sizes, 其它用 cfg.fw/fh
+      const baseW = cfg.sizes? cfg.sizes[id0][0] : cfg.fw;
+      const baseH = cfg.sizes? cfg.sizes[id0][1] : cfg.fh;
+      const s=item.scale||1;
+      const cx=item.x, cy=item.y;
+      const fw=baseW*s, fh=baseH*s;
       const fr=cfg.frames>1 ? Math.floor(animTime*cfg.fps) % cfg.frames : 0;
-      if(item.kind==='cloud'){ ctx.drawImage(im, 0,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh); }
-      else if(item.kind==='rock'){ ctx.drawImage(im, 0,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh); }
-      else { ctx.drawImage(im, fr*cfg.fw,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh); }
+      // 所有景观都以"底部中心"锚定(cx = 水平中心, cy = 底部)
+      if(cfg.frames>1) ctx.drawImage(im, fr*cfg.fw,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh);
+      else ctx.drawImage(im, 0,0,baseW,baseH, cx-fw/2, cy-fh, fw, fh);
     }
   }
   // 网格
@@ -431,15 +435,17 @@ document.getElementById('landScale').oninput=e=>{ landScale=Math.max(0.2,Math.mi
 function renderLandList(){
   const box=document.getElementById('landList'); box.innerHTML='';
   if(!A.landscape) return;
-  const cats=[['bush','灌木'],['tree','树'],['rock','岩石'],['cloud','云']];
+  const cats=[['bush','灌木'],['tree','树'],['rock','岩石'],['cloud','云'],['building','建筑']];
   for(const [kind,label] of cats){
     const cfg=A.landscape[kind]; if(!cfg) continue;
     for(let i=0;i<cfg.imgs.length;i++){
       const it=document.createElement('div'); it.className='land-item'+(landscapeBrush&&landscapeBrush.kind===kind&&landscapeBrush.id===i?' on':'');
-      const c=document.createElement('canvas'); c.width=72;c.height=36; const cc=c.getContext('2d'); cc.imageSmoothingEnabled=false;
-      cc.drawImage(cfg.imgs[i], 0,0,cfg.fw,cfg.fh, 0,0,54,36);
+      const c=document.createElement('canvas'); c.width=72;c.height=48; const cc=c.getContext('2d'); cc.imageSmoothingEnabled=false;
+      const baseW = cfg.sizes? cfg.sizes[i][0] : cfg.fw, baseH = cfg.sizes? cfg.sizes[i][1] : cfg.fh;
+      const sd=Math.min(54/baseW, 42/baseH);
+      cc.drawImage(cfg.imgs[i], 0,0,baseW,baseH, (72-baseW*sd)/2,(48-baseH*sd)/2, baseW*sd, baseH*sd);
       it.appendChild(c);
-      const nm=document.createElement('div'); nm.className='nm'; nm.textContent=label+(i+1);
+      const nm=document.createElement('div'); nm.className='nm'; nm.textContent= cfg.names? cfg.names[i] : (label+(i+1));
       it.appendChild(nm);
       it.onclick=()=>{ landscapeBrush={kind,id:i}; renderLandList(); };
       box.appendChild(it);
@@ -507,14 +513,19 @@ document.getElementById('applySize').onclick=()=>{
 Promise.all([
   img('assets/tiles/color1.png'),img('assets/tiles/color2.png'),img('assets/tiles/color3.png'),img('assets/tiles/color4.png'), img('assets/tiles/water_bg.png'),
   img('assets/landscape/bush1.png'),img('assets/landscape/bush2.png'),img('assets/landscape/tree1.png'),img('assets/landscape/tree2.png'),
-  img('assets/landscape/rock1.png'),img('assets/landscape/rock2.png'),img('assets/landscape/cloud1.png'),img('assets/landscape/wrock1.png')
-]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1])=>{
+  img('assets/landscape/rock1.png'),img('assets/landscape/rock2.png'),img('assets/landscape/cloud1.png'),img('assets/landscape/wrock1.png'),
+  img('assets/landscape/buildings/castle.png'),img('assets/landscape/buildings/house1.png'),img('assets/landscape/buildings/house2.png'),img('assets/landscape/buildings/house3.png'),
+  img('assets/landscape/buildings/monastery.png'),img('assets/landscape/buildings/barracks.png'),img('assets/landscape/buildings/archery.png'),img('assets/landscape/buildings/tower.png')
+]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower])=>{
   A={sheets:{color1,color2,color3,color4},waterbg};
   A.landscape={
     bush:{imgs:[lsBush1,lsBush2], fw:128, fh:128, frames:8, fps:8, kind:'bush', label:'灌木'},
     tree:{imgs:[lsTree1,lsTree2], fw:192, fh:256, frames:8, fps:6, kind:'tree', label:'树'},
     rock:{imgs:[lsRock1,lsRock2], fw:64, fh:64, frames:1, fps:0, kind:'rock', label:'岩石'},
     cloud:{imgs:[lsCloud1], fw:576, fh:256, frames:1, fps:0, kind:'cloud', label:'云'},
+    building:{ imgs:[bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower],
+      sizes:[[320,256],[128,192],[128,192],[128,192],[192,320],[192,256],[192,256],[128,256]],
+      frames:1, fps:0, kind:'building', label:'建筑', names:['城堡','民房1','民房2','民房3','修道院','兵营','箭楼','塔'] },
   };
   resizeCanvas(); renderLayerList(); renderBrushPanel(); draw(); startLoop();
 })
