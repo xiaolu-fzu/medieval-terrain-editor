@@ -208,8 +208,8 @@ function draw(){
       const f=((fr+k)%16)*F;
       // 缩小水泡精灵, 底部中心对齐到 水格(r+1,c) 的底边, 只占水格不盖上方悬崖
       const sZ=TS*2.4;                                // 显示尺寸(约1.2格)
-      const bx=c*TS+TS/2, byy=(r+1)*TS+TS;            // 张底部中心(水格底)
-      ctx.drawImage(wf, f,0,F,F, bx-sZ/2, byy-sZ, sZ, sZ);
+      const bx=c*TS+TS/2, byy=(r+1)*TS+TS/2;            // 张底部中心(水格底)
+      ctx.drawImage(wf, f,0,F,F, bx-sZ/2, byy-sZ/2, sZ, sZ);
     }
   }
 
