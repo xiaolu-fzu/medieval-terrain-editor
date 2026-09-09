@@ -189,8 +189,8 @@ let shadowOn=1; // 阴影特效开关
 let shadowScale=1; // 阴影面积(格): 初始1格
 // 景观定义(帧数/尺寸/锚点偏移)由 assets.landscape 加载后提供
 function isLandscapeAt(l,r,c){ return landscape.some(s=> s.l===l && s.r===r && s.c===c); }
-function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && (s.r===r||s.r+1===r)); }
-function stairDirAt(l,r,c){ const s=stairs.find(x=> x.l===l && x.c===c && (x.r===r||x.r+1===r)); return s? s.dir : 0; }
+function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && s.r===r); } // 只认楼梯上格(锚点); 下格只与悬崖交互
+function stairDirAt(l,r,c){ const s=stairs.find(x=> x.l===l && x.c===c && x.r===r); return s? s.dir : 0; }
 let curLayer=0; // 当前绘制层
 let brush='grass'; // 通用画笔: water|grass|cliff
 let A=null;
