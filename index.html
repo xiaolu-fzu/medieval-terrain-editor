@@ -109,6 +109,9 @@ const LAYERDEF=[
 let COLS=24, ROWS=14;
 let layers=[]; for(let l=0;l<NLAYER;l++){ const g=[]; for(let r=0;r<ROWS;r++) g.push(new Array(COLS).fill(0)); layers.push(g); }
 let layerVis=[true,true,true,true]; // 显隐
+let stairs=[]; // 楼梯额外贴图: {l, r, c, dir(3左/4右)}, 不影响 layers 地形数据
+function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && (s.r===r||s.r+1===r)); }
+function stairDirAt(l,r,c){ const s=stairs.find(x=> x.l===l && x.c===c && (x.r===r||x.r+1===r)); return s? s.dir : 0; }
 let curLayer=0; // 当前绘制层
 let brush='grass'; // 通用画笔: water|grass|cliff
 let A=null;
@@ -165,16 +168,14 @@ function draw(){
     const HI=320; // 高地草面在 sheet 列5-8, 0层AUTOTILE在列0-3, 偏移+320
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==1) continue;
-      // 楼梯吃边框: (a) 本层左右邻是楼梯(3/4) => W/E位=1; (b) 下层(爬上的那层)的楼梯接入本层草唇顶 => 本格若被下层楼梯"爬到", 其边框消失
+      // 楼梯吃边框: (a) 本层左右邻是楼梯(stairs) => W/E位=1; (b) 下层楼梯接入上层草唇顶 => 本格边框消失
       let m=maskHill(l,r,c);
-      if(c-1>=0 && (L[r][c-1]===3||L[r][c-1]===4)) m = m.slice(0,3)+'1';      // W=1
-      if(c+1<COLS && (L[r][c+1]===3||L[r][c+1]===4)) m = m.slice(0,1)+'1'+m.slice(2); // E=1
-      // 吃上一层草唇顶边框: 楼梯上格在 下层(l-1) 的 (r-1,c); 若存在, 本草面格(l,r,c)是其爬上的草唇顶 -> 左楼梯(3)吃左边框(W=1), 右楼梯(4)吃右边框(E=1)
-      if(l-1>=0 && layers[l-1] && r-1>=0){
-        const lo=layers[l-1];
-        const stairAt=lo[r-1][c];
-        if(stairAt===3){ m = m.slice(0,3)+'1'; }      // 左楼梯 -> W=1 (吃左边框)
-        else if(stairAt===4){ m = m.slice(0,1)+'1'+m.slice(2); }  // 右楼梯 -> E=1 (吃右边框)
+      if(c-1>=0 && isStairAt(l,r,c-1)) m = m.slice(0,3)+'1';      // W=1 (本层左邻楼梯)
+      if(c+1<COLS && isStairAt(l,r,c+1)) m = m.slice(0,1)+'1'+m.slice(2); // E=1
+      if(l-1>=0 && r-1>=0){
+        const d=stairDirAt(l-1,r-1,c);
+        if(d===3) m = m.slice(0,3)+'1';        // 下层左楼梯 -> 吃本草面格左边框
+        else if(d===4) m = m.slice(0,1)+'1'+m.slice(2);  // 下层右楼梯 -> 吃右边框
       }
       if((r-1>=0 && L[r-1][c]===1) && (r+1<ROWS && L[r+1][c]!==1)){
         // 草唇顶固定用 纯草唇行(y=128, 7-9/15)
@@ -189,9 +190,9 @@ function draw(){
     // ---------- 再画悬崖(值2)在最上：基础段位(按左右悬崖邻) + 草唇顶修正(左右草唇顶) ----------
     // 草唇顶(悬崖修正): 草地(1)或楼梯(3/4)都算, 悬崖(2)/空(0)不算 —— 楼梯横向等效草唇顶
     const isLipTop=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false;
-      // 只限当前层: 草地(1)或楼梯(3/4/5, 上/下格)都算草唇顶; 不看其它层
+      // 当前层: 草地(1) 或 该格是楼梯(额外贴图) => 草唇顶
       const v=L[rr][cc];
-      return (v===1||v===3||v===4||v===5); };
+      return (v===1 || isStairAt(l,rr,cc)); };
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==2) continue;
       // 基础段位: 左右邻是否悬崖(2)
@@ -217,26 +218,16 @@ function draw(){
       ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,r*TS,TS,TS);
     }
   }
-  // ---------- 楼梯(值3): 独立遍历所有层(含第0层), 用每层的层号 l 判定颜色(跟随上一层 l+1), 不受当前层切换影响 ----------
-  for(let sl=0; sl<NLAYER; sl++){
-    if(!layerVis[sl]) continue;
-    const SL=layers[sl];
-    // 楼梯颜色与当前层草唇顶一致(同层色)
-    const stairSheet=A.sheets[LAYERDEF[sl].color];
-    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      const sv=SL[r][c];
-      if(sv===3 || sv===4){
-        const right = sv===4;
-        const topX = right?192:0;
-        ctx.drawImage(stairSheet, topX,256,TS,TS, c*TS,r*TS,TS,TS);
-      } else if(sv===5){
-        // 下格(岩底): 方向看上方格(3=左,4=右)
-        const upv = (r-1>=0)? SL[r-1][c] : 0;
-        const right = upv===4;
-        const botX = right?192:0;
-        ctx.drawImage(stairSheet, botX,320,TS,TS, c*TS,r*TS,TS,TS);
-      }
-    }
+  // ---------- 楼梯(额外贴图, 在 stairs 数组): 叠加绘制, 不影响 layers 地形 ----------
+  for(const st of stairs){
+    if(!layerVis[st.l]) continue;
+    const sheet=A.sheets[LAYERDEF[st.l].color];           // 楼梯颜色=该层草唇顶色
+    const right = st.dir===4;                              // 3=左坡(x=0), 4=右坡(x=192)
+    const topX = right?192:0, botX = right?192:0;
+    const r=st.r, c=st.c;
+    // 上格(草坡)在锚点; 下格(岩底)在下方格 —— 叠加贴图(不改地形)
+    ctx.drawImage(sheet, topX,256,TS,TS, c*TS,r*TS,TS,TS);
+    if(r+1<ROWS) ctx.drawImage(sheet, botX,320,TS,TS, c*TS,(r+1)*TS,TS,TS);
   }
   // 网格
   ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
@@ -251,12 +242,16 @@ let painting=false, lastCell=null;
 function toggle(r,c){
   if(brush==='erase'){
     const v=layers[curLayer][r][c];
-    if(v===3||v===4){ layers[curLayer][r][c]=0; if(r+1<ROWS) layers[curLayer][r+1][c]=0; }  // 清上格+下格
+    // 先擦楼梯(在 stairs 中): 移除该格或其下方格的楼梯
+    const si=stairs.findIndex(s=> s.l===curLayer && ((s.r===r&&s.c===c)||(s.r+1===r&&s.c===c)) );
+    if(si>=0){ stairs.splice(si,1); }
     else layers[curLayer][r][c]=0;
     return;
   }
-  if(brush==='stairL'){ layers[curLayer][r][c]=3; if(r+1<ROWS) layers[curLayer][r+1][c]=5; return; }   // 左楼梯: 一次放两格(上3下5)
-  if(brush==='stairR'){ layers[curLayer][r][c]=4; if(r+1<ROWS) layers[curLayer][r+1][c]=5; return; }   // 右楼梯
+  if(brush==='stairL'||brush==='stairR'){
+    // 楼梯作为额外贴图: 存进 stairs(锚点上格), 不改 layers 地形; 一次两格(上格+下格)
+    stairs.push({ l:curLayer, r:r, c:c, dir: brush==='stairL'?3:4 }); draw(); return;
+  }
   if(curLayer===0){
     layers[0][r][c] = brush==='water'?0 : 1;
   } else {
