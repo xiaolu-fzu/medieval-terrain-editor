@@ -1,5 +1,5 @@
 
-*.json
+# *.json (示例1需要 terrain-map.json 提交)
 
 _probe*
 _tree_frame*
