@@ -221,9 +221,8 @@ function drawShadow(l){
     if(l===0) continue;                        // 阴影只在悬崖层
     if(L[r][c]!==2) continue;                  // 只悬崖(2)
     if(!(r+1<ROWS && L0[r+1][c]===1)) continue;  // 悬崖下方0层是草地(1) => 落草地 => 阴影
-    const fr=Math.floor(animTime*5)%16, k=(r*7+c*3)%16, f=((fr+k)%16)*F;
     const sZ=TS*shadowScale, bx=c*TS+TS/2, byy=r*TS+TS/2;  // 望天层: 悬崖格中心
-    ctx.drawImage(sh, f,0,F,F, bx-sZ/2, byy-sZ/2, sZ, sZ);
+    ctx.drawImage(sh, 0,0,F,F, bx-sZ/2, byy-sZ/2, sZ, sZ);  // 单帧(阴影静止)
   }
 }
 function draw(){
