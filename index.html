@@ -78,6 +78,15 @@
           </div>
           <div class="field"><label>大小</label><input type="number" id="landScale" value="1" min="0.2" max="4" step="0.1"></div>
         </div>
+        <div class="group">
+          <h3>工具</h3>
+          <div class="tabs" id="landTools">
+            <button class="tab on" id="ltPlace">放置</button>
+            <button class="tab" id="ltErase">橡皮擦</button>
+            <button class="tab" id="ltGlove">手套</button>
+          </div>
+          <div class="field"><label>大小</label><input type="number" id="landScaleSel" value="1" min="0.2" max="4" step="0.1"></div>
+        </div>
         <div class="group"><h3>景观</h3><div id="landList"></div></div>
       </div>
       <div class="group">
@@ -146,6 +155,8 @@ let animTick=0; // 动画帧计数
 let animTime=0; // 动画累计秒(驱动平滑帧)
 let tab='terrain'; // 'terrain' | 'landscape'
 let landscapeBrush=null; // 当前景观选择 {kind, id}
+let landBrush='place'; // 'place'(放置) | 'erase'(橡皮擦,只删景观) | 'glove'(手套,移动/缩放)
+let selectedLand=null; // 手套选中的景观
 let landscapeMode='geom'; // 'geom'(几何,吸附格子) | 'free'(自由,任意坐标)
 let landScale=1; // 景观缩放: 1=原大小, <1缩小, >1放大
 // 景观定义(帧数/尺寸/锚点偏移)由 assets.landscape 加载后提供
@@ -334,18 +345,33 @@ function placeAt(px,py){
     let x=px, y=py;
     if(landscapeMode==='geom'){ x=Math.floor(px/TS)*TS+TS/2; y=Math.floor(py/TS)*TS+TS/2; }
     const li=landscape.findIndex(s=> s.l===curLayer && Math.abs(s.x-x)<TS/2 && Math.abs(s.y-y)<TS/2);
-    if(brush==='erase'){ if(li>=0) landscape.splice(li,1); }
+    if(landBrush==='erase'){ if(li>=0){ landscape.splice(li,1); if(selectedLand===landscape) selectedLand=null; } }
+    else if(landBrush==='glove'){ selectedLand = li>=0? landscape[li] : null; if(selectedLand){ document.getElementById('landScaleSel').value=selectedLand.scale||1; } }
     else if(landscapeBrush && li<0){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale }); }
     return;
   }
   const c=Math.floor(px/TS), r=Math.floor(py/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return; toggle(r,c);
 }
 cv.addEventListener('mousedown',e=>{ e.preventDefault(); const p=ptrXY(e); painting=true; lastXY=p; placeAt(p.x,p.y); draw(); });
-cv.addEventListener('mousemove',e=>{ const p=ptrXY(e); document.getElementById('cursor').textContent=Math.floor(p.x/TS)+','+Math.floor(p.y/TS);
-  if(tab==='landscape' && landscapeMode==='free' && painting){ placeAt(p.x,p.y); draw(); }
-  else if(painting){ const c=Math.floor(p.x/TS),r=Math.floor(p.y/TS); if(c!==lastXY.c||r!==lastXY.r){ toggle(r,c); lastXY={c,r}; draw(); } } });
-cv.addEventListener('mouseup',()=>painting=false);
+cv.addEventListener('mousemove',e=>{
+  const p=ptrXY(e);
+  document.getElementById('cursor').textContent=Math.floor(p.x/TS)+','+Math.floor(p.y/TS);
+  if(tab==='landscape'){
+    if(landBrush==='glove' && selectedLand){ selectedLand.x=p.x; selectedLand.y=p.y; draw(); }   // 手套: 拖动移动
+    else if(landBrush==='place' && landscapeMode==='free' && painting){ placeAt(p.x,p.y); draw(); } // 自由连续放
+    return;
+  }
+  if(painting){ const c=Math.floor(p.x/TS),r=Math.floor(p.y/TS); if(c!==lastXY.c||r!==lastXY.r){ toggle(r,c); lastXY={c,r}; draw(); } }
+});
+cv.addEventListener('mouseup',()=>{ if(!(tab==='landscape'&&landBrush==='glove')) selectedLand=null; pain=false; painting=false; document.getElementById('landScaleSel').value=selectedLand?(selectedLand.scale||1):landScale; });
 cv.addEventListener('mouseleave',()=>painting=false);
+cv.addEventListener('wheel',e=>{ if(tab==='landscape' && selectedLand){ e.preventDefault(); const d=e.deltaY>0?-0.1:0.1; selectedLand.scale=Math.max(0.2,Math.min(4,(selectedLand.scale||1)+d)); document.getElementById('landScaleSel').value=selectedLand.scale; draw(); } },{passive:false});
+// 工具切换
+function setLandTool(t){ landBrush=t; document.getElementById('ltPlace').classList.toggle('on',t==='place'); document.getElementById('ltErase').classList.toggle('on',t==='erase'); document.getElementById('ltGlove').classList.toggle('on',t==='glove'); }
+document.getElementById('ltPlace').onclick=()=>setLandTool('place');
+document.getElementById('ltErase').onclick=()=>setLandTool('erase');
+document.getElementById('ltGlove').onclick=()=>setLandTool('glove');
+document.getElementById('landScaleSel').oninput=e=>{ landScale=Math.max(0.2,Math.min(4,+e.target.value||1)); if(selectedLand) selectedLand.scale=landScale; };
 
 // 图层列表
 function renderLayerList(){
