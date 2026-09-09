@@ -363,7 +363,7 @@ function draw(){
       const fw=baseW*s, fh=baseH*s;
       const fr=cfg.frames>1 ? Math.floor(animTime*cfg.fps) % cfg.frames : 0;
       // 所有景观都以"底部中心"锚定(cx = 水平中心, cy = 底部)
-      if(cfg.frames>1) ctx.drawImage(im, fr*cfg.fw,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh);
+      if(cfg.frames>1) ctx.drawImage(im, fr*baseW,0,baseW,baseH, cx-fw/2, cy-fh, fw, fh);
       else ctx.drawImage(im, 0,0,baseW,baseH, cx-fw/2, cy-fh, fw, fh);
     }
   }
