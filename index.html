@@ -252,6 +252,8 @@ function draw(){
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       ctx.drawImage(A.waterbg,0,0,TS,TS,c*TS,r*TS,TS,TS);
     }
+  if(waterFoamOn) drawFoam(0); // 0层草/悬崖邻水的水泡(望天层)
+
 
     // 草地顶面(值1草地, 值2悬崖也铺草底) + 水岸边用普通草地掩码
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
@@ -637,7 +639,7 @@ document.getElementById('initWater').onclick=()=>{ for(let r=0;r<ROWS;r++) for(l
 document.getElementById('initGrass').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
 document.getElementById('demoCliff').onclick=()=>{
   // 示例1: 加载 terrain-map .json
-  fetch(encodeURI('terrain-map .json')).then(r=>r.json()).then(d=>{ try{ applyData(d); }catch(e){ document.title='示例1失败: '+e.message; } }).catch(e=>{ document.title='示例1加载失败: '+e.message; });
+  fetch('terrain-map.json').then(r=>r.json()).then(d=>{ try{ applyData(d); }catch(e){ document.title='示例1失败: '+e.message; } }).catch(e=>{ document.title='示例1加载失败: '+e.message; });
 };
 document.getElementById('applySize').onclick=()=>{
   const nr=Math.max(4,Math.min(200,+document.getElementById('rows').value||ROWS));
