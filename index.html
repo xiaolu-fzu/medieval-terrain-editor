@@ -233,7 +233,6 @@ function draw(){
   // 第1/2/3层 高处地面 —— 分开绘制：草地(值1)与悬崖(值2)各自独立，各守各的规则
   for(let l=1;l<NLAYER;l++){
     if(!layerVis[l]) continue;
-    if(waterFoamOn) drawFoam(l);           // 该层水泡(悬崖落水下方), 画在该层地形之前
     const sheet=A.sheets[LAYERDEF[l].color];
     const L=layers[l];
     // ---------- 先画草地(值1, 含草唇顶) ----------
