@@ -65,6 +65,14 @@
       </div>
       <!-- 景观面板 -->
       <div id="landPanel" style="display:none">
+        <div class="group">
+          <h3>摆放模式</h3>
+          <div class="tabs">
+            <button class="tab on" id="modeGeom">几何</button>
+            <button class="tab" id="modeFree">自由</button>
+          </div>
+          <div class="field"><label>大小</label><input type="number" id="landScale" value="1" min="0.2" max="4" step="0.1"></div>
+        </div>
         <div class="group"><h3>景观</h3><div id="landList"></div></div>
       </div>
       <div class="group">
@@ -133,6 +141,8 @@ let animTick=0; // 动画帧计数
 let animTime=0; // 动画累计秒(驱动平滑帧)
 let tab='terrain'; // 'terrain' | 'landscape'
 let landscapeBrush=null; // 当前景观选择 {kind, id}
+let landscapeMode='geom'; // 'geom'(几何,吸附格子) | 'free'(自由,任意坐标)
+let landScale=1; // 景观缩放: 1=原大小, <1缩小, >1放大
 // 景观定义(帧数/尺寸/锚点偏移)由 assets.landscape 加载后提供
 function isLandscapeAt(l,r,c){ return landscape.some(s=> s.l===l && s.r===r && s.c===c); }
 function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && (s.r===r||s.r+1===r)); }
@@ -261,13 +271,13 @@ function draw(){
       const cfg=A.landscape[item.kind];
       if(!cfg) continue;
       const im=cfg.imgs[item.id % cfg.imgs.length];
-      const cx=item.c*TS, cy=item.r*TS;
-      const fw=cfg.fw, fh=cfg.fh;
-      // 时间驱动帧格(参考角色动画): Math.floor(animTime*fps) % frames
+      const s=item.scale||1;                 // 景观缩放(1=原大小)
+      const cx=item.x, cy=item.y;            // 像素中心
+      const fw=cfg.fw*s, fh=cfg.fh*s;        // 缩放后尺寸
       const fr=cfg.frames>1 ? Math.floor(animTime*cfg.fps) % cfg.frames : 0;
-      if(item.kind==='cloud'){ ctx.drawImage(im, 0,0,fw,fh, cx, cy-30, 128, 84); } // 云整幅按比例缩小显示
-      else if(item.kind==='rock'){ ctx.drawImage(im, 0,0,fw,fh, cx+(TS-fw)/2, cy+TS-fh, fw,fh); }
-      else { ctx.drawImage(im, fr*fw,0,fw,fh, cx+(TS-fw)/2, cy+TS-fh, fw,fh); }
+      if(item.kind==='cloud'){ ctx.drawImage(im, 0,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh); }
+      else if(item.kind==='rock'){ ctx.drawImage(im, 0,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh); }
+      else { ctx.drawImage(im, fr*cfg.fw,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh); }
     }
   }
   // 网格
@@ -282,13 +292,15 @@ function cellAt(e){ const rc=cv.getBoundingClientRect(); const x=Math.floor(e.cl
 let painting=false, lastCell=null;
 function toggle(r,c){
   if(tab==='landscape'){
-    // 景观模式: 点空白放一个景观(当前层); 已放景观处锁定; 橡皮擦删景观(不改地形)
+    // 景观模式: 点空白放一个景观(当前层); 擦除删景观(不改地形)
     if(brush==='erase'){
-      const li=landscape.findIndex(s=> s.l===curLayer && s.r===r && s.c===c);
+      const li=landscape.findIndex(s=> s.l===curLayer && s.x>=c && s.x<c+TS && s.y>=r && s.y<r+TS);
       if(li>=0) landscape.splice(li,1);
       return;
     }
-    if(landscapeBrush && !isLandscapeAt(curLayer,r,c)){ landscape.push({ l:curLayer, r:r, c:c, kind:landscapeBrush.kind, id:landscapeBrush.id }); }
+    const fx = (landscapeMode==='geom')? (c+0.5)*TS : c;   // 几何: 格子中心; 自由: 像素c
+    const fy = (landscapeMode==='geom')? (r+0.5)*TS : r;
+    if(landscapeBrush){ landscape.push({ l:curLayer, x:fx, y:fy, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale }); }
     return;
   }
   if(brush==='erase'){
@@ -310,9 +322,23 @@ function toggle(r,c){
     if(layers[curLayer][r][c]===0) layers[curLayer][r][c]=v;
   }
 }
-cv.addEventListener('mousedown',e=>{ e.preventDefault(); const cell=cellAt(e); if(cell){ painting=true; lastCell=cell; toggle(cell.r,cell.c); draw(); } });
-cv.addEventListener('mousemove',e=>{ const cell=cellAt(e); if(cell) document.getElementById('cursor').textContent=cell.c+','+cell.r;
-  if(painting&&cell&&(cell.r!==lastCell.r||cell.c!==lastCell.c)){ toggle(cell.r,cell.c); lastCell=cell; draw(); } });
+function ptrXY(e){ const rc=cv.getBoundingClientRect(); return { x:e.clientX-rc.left, y:e.clientY-rc.top }; }
+function placeAt(px,py){
+  if(tab==='landscape'){
+    // 像素坐标: 几何吸附到格子中心, 自由用像素
+    let x=px, y=py;
+    if(landscapeMode==='geom'){ x=Math.floor(px/TS)*TS+TS/2; y=Math.floor(py/TS)*TS+TS/2; }
+    const li=landscape.findIndex(s=> s.l===curLayer && Math.abs(s.x-x)<TS/2 && Math.abs(s.y-y)<TS/2);
+    if(brush==='erase'){ if(li>=0) landscape.splice(li,1); }
+    else if(landscapeBrush && li<0){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale }); }
+    return;
+  }
+  const c=Math.floor(px/TS), r=Math.floor(py/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return; toggle(r,c);
+}
+cv.addEventListener('mousedown',e=>{ e.preventDefault(); const p=ptrXY(e); painting=true; lastXY=p; placeAt(p.x,p.y); draw(); });
+cv.addEventListener('mousemove',e=>{ const p=ptrXY(e); document.getElementById('cursor').textContent=Math.floor(p.x/TS)+','+Math.floor(p.y/TS);
+  if(tab==='landscape' && landscapeMode==='free' && painting){ placeAt(p.x,p.y); draw(); }
+  else if(painting){ const c=Math.floor(p.x/TS),r=Math.floor(p.y/TS); if(c!==lastXY.c||r!==lastXY.r){ toggle(r,c); lastXY={c,r}; draw(); } } });
 cv.addEventListener('mouseup',()=>painting=false);
 cv.addEventListener('mouseleave',()=>painting=false);
 
@@ -360,6 +386,10 @@ function switchTab(t){
 }
 document.getElementById('tabTerrain').onclick=()=>switchTab('terrain');
 document.getElementById('tabLandscape').onclick=()=>switchTab('landscape');
+function setLandMode(m){ landscapeMode=m; document.getElementById('modeGeom').classList.toggle('on',m==='geom'); document.getElementById('modeFree').classList.toggle('on',m==='free'); }
+document.getElementById('modeGeom').onclick=()=>setLandMode('geom');
+document.getElementById('modeFree').onclick=()=>setLandMode('free');
+document.getElementById('landScale').oninput=e=>{ landScale=Math.max(0.2,Math.min(4,+e.target.value||1)); };
 
 function renderLandList(){
   const box=document.getElementById('landList'); box.innerHTML='';
