@@ -638,8 +638,11 @@ document.getElementById('importFile').addEventListener('change',e=>{ importJson(
 document.getElementById('initWater').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=0; draw(); };
 document.getElementById('initGrass').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
 document.getElementById('demoCliff').onclick=()=>{
-  // 示例1: 加载 terrain-map .json
-  fetch('terrain-map.json').then(r=>r.json()).then(d=>{ try{ applyData(d); }catch(e){ document.title='示例1失败: '+e.message; } }).catch(e=>{ document.title='示例1加载失败: '+e.message; });
+  // 示例1: 在当前目录导入指定文件 terrain-map.json(复用 applyData)
+  fetch('terrain-map.json', { cache:'no-store' })
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(d=>{ try{ applyData(d); }catch(e){ alert('示例1 应用失败: '+e.message); } })
+    .catch(e=>{ alert('示例1 加载失败: '+e.message); });
 };
 document.getElementById('applySize').onclick=()=>{
   const nr=Math.max(4,Math.min(200,+document.getElementById('rows').value||ROWS));
