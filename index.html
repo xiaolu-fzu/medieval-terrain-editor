@@ -205,7 +205,7 @@ function drawFoam(l){
     }
     if(!nearWater) continue;
     const fr=Math.floor(animTime*5)%16, k=(r*7+c*3)%16, f=((fr+k)%16)*F;
-    const sZ=TS*foamScale, bx=c*TS+TS/2, byy=(r+1)*TS+TS/2;   // 中心=落水瓦片下方水格(水面层,无水覆盖可见)
+    const sZ=TS*foamScale, bx=c*TS+TS/2, byy=r*TS+TS/2;   // 望天层: 中心=落水地形格中心(水面/地表), 地形后画盖中间、边缘露出
     ctx.drawImage(wf, f,0,F,F, bx-sZ/2, byy-sZ/2, sZ, sZ);
   }
 }
