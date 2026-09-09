@@ -605,7 +605,7 @@ function startLoop(){ if(rafId) return; lastT=performance.now(); (function tick(
 // ---------- 导入/导出 (JSON) ----------
 function exportJson(){
   const data={ version:1, cols:COLS, rows:ROWS, curLayer:curLayer, layerVis:layerVis,
-    layers:layers.map(g=>g.map(r=>r.slice())), stairs:stairs.map(s=>Object.assign({},s)), landscape:landscape.map(s=>Object.assign({},s)) };
+    layers:layers.map(g=>g.map(r=>r.slice())), stairs:stairs.map(s=>Object.assign({},s)), landscape:landscape.map(s=>Object.assign({},s)), units:units.map(s=>Object.assign({},s)) };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='terrain-map.json'; a.click(); URL.revokeObjectURL(a.href);
 }
@@ -621,6 +621,7 @@ function importJson(file){
     for(let l=0;l<Math.min(NLAYER,d.layers.length);l++){ for(let r=0;r<Math.min(ROWS,d.layers[l].length);r++){ for(let c=0;c<Math.min(COLS,d.layers[l][r].length);c++) layers[l][r][c]=d.layers[l][r][c]; } }
     stairs=(d.stairs||[]).map(s=>Object.assign({},s));
     landscape=(d.landscape||[]).map(s=>Object.assign({},s));
+  units=(d.units||[]).map(s=>Object.assign({},s));
     document.getElementById('rows').value=ROWS; document.getElementById('cols').value=COLS;
     resizeCanvas(); renderLayerList(); renderBrushPanel(); renderLandList(); draw();
   }catch(e){ document.title='导入失败: '+e.message; } };
