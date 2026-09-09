@@ -130,6 +130,7 @@ let layerVis=[true,true,true,true]; // 显隐
 let stairs=[]; // 楼梯额外贴图: {l, r, c, dir(3左/4右)}, 不影响 layers 地形数据
 let landscape=[]; // 景观: {l, r, c, kind, id} 与地形互不删除, 叠加渲染遮挡
 let animTick=0; // 动画帧计数
+let animTime=0; // 动画累计秒(驱动平滑帧)
 let tab='terrain'; // 'terrain' | 'landscape'
 let landscapeBrush=null; // 当前景观选择 {kind, id}
 // 景观定义(帧数/尺寸/锚点偏移)由 assets.landscape 加载后提供
@@ -262,12 +263,11 @@ function draw(){
       const im=cfg.imgs[item.id % cfg.imgs.length];
       const cx=item.c*TS, cy=item.r*TS;
       const fw=cfg.fw, fh=cfg.fh;
-      const fr=cfg.frames>1 ? Math.floor(animTick/6) % cfg.frames : 0;
-      if(item.kind==='rock'){ ctx.drawImage(im, 0,0,fw,fh, cx+(TS-fw)/2, cy+TS-fh, fw,fh); }
-      else if(item.kind==='cloud'){ ctx.drawImage(im, fr*fw,0,fw,fh, cx, cy-40, fw, fh); }
-      else { // bush / tree: 底部对齐格子
-        ctx.drawImage(im, fr*fw,0,fw,fh, cx+(TS-fw)/2, cy+TS-fh, fw,fh);
-      }
+      // 时间驱动帧格(参考角色动画): Math.floor(animTime*fps) % frames
+      const fr=cfg.frames>1 ? Math.floor(animTime*cfg.fps) % cfg.frames : 0;
+      if(item.kind==='cloud'){ ctx.drawImage(im, 0,0,fw,fh, cx, cy-30, 128, 84); } // 云整幅按比例缩小显示
+      else if(item.kind==='rock'){ ctx.drawImage(im, 0,0,fw,fh, cx+(TS-fw)/2, cy+TS-fh, fw,fh); }
+      else { ctx.drawImage(im, fr*fw,0,fw,fh, cx+(TS-fw)/2, cy+TS-fh, fw,fh); }
     }
   }
   // 网格
@@ -380,8 +380,8 @@ function renderLandList(){
   }
 }
 // 动画循环: 驱动景观帧
-let rafId=null;
-function startLoop(){ if(rafId) return; (function tick(){ animTick++; draw(); rafId=requestAnimationFrame(tick); })(); }
+let rafId=null, lastT=null;
+function startLoop(){ if(rafId) return; lastT=performance.now(); (function tick(now){ const dt=Math.min((now-lastT)/1000,0.05); lastT=now; animTime+=dt; draw(); rafId=requestAnimationFrame(tick); })(performance.now()); }
 
 document.getElementById('initWater').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=0; draw(); };
 document.getElementById('initGrass').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
@@ -417,10 +417,10 @@ Promise.all([
 ]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1])=>{
   A={sheets:{color1,color2,color3,color4},waterbg};
   A.landscape={
-    bush:{imgs:[lsBush1,lsBush2], fw:128, fh:128, frames:8, kind:'bush', label:'灌木'},
-    tree:{imgs:[lsTree1,lsTree2], fw:256, fh:256, frames:6, kind:'tree', label:'树'},
-    rock:{imgs:[lsRock1,lsRock2], fw:64, fh:64, frames:1, kind:'rock', label:'岩石'},
-    cloud:{imgs:[lsCloud1], fw:288, fh:256, frames:2, kind:'cloud', label:'云'},
+    bush:{imgs:[lsBush1,lsBush2], fw:128, fh:128, frames:8, fps:8, kind:'bush', label:'灌木'},
+    tree:{imgs:[lsTree1,lsTree2], fw:256, fh:256, frames:6, fps:6, kind:'tree', label:'树'},
+    rock:{imgs:[lsRock1,lsRock2], fw:64, fh:64, frames:1, fps:0, kind:'rock', label:'岩石'},
+    cloud:{imgs:[lsCloud1], fw:576, fh:256, frames:1, fps:0, kind:'cloud', label:'云'},
   };
   resizeCanvas(); renderLayerList(); renderBrushPanel(); draw(); startLoop();
 })
