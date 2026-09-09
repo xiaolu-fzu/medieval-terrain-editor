@@ -165,10 +165,16 @@ function draw(){
     const HI=320; // 高地草面在 sheet 列5-8, 0层AUTOTILE在列0-3, 偏移+320
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==1) continue;
-      // 楼梯吃边框: 左边格是楼梯上格(值3) => 掩码W强制1; 右边格是楼梯上格 => 掩码E强制1
+      // 楼梯吃边框: (a) 本层左右邻是楼梯(3/4) => W/E位=1; (b) 下层(爬上的那层)的楼梯接入本层草唇顶 => 本格若被下层楼梯"爬到", 其边框消失
       let m=maskHill(l,r,c);
-      if(c-1>=0 && (L[r][c-1]===3||L[r][c-1]===4)) m = m.slice(0,3)+'1';      // W=1 (左/右楼梯都算)
+      if(c-1>=0 && (L[r][c-1]===3||L[r][c-1]===4)) m = m.slice(0,3)+'1';      // W=1
       if(c+1<COLS && (L[r][c+1]===3||L[r][c+1]===4)) m = m.slice(0,1)+'1'+m.slice(2); // E=1
+      // 下层(下一层=本层-1) 楼梯爬到本层: 本草面格(l,r,c) 是"上一层", 楼梯(sl=l-1)在 (r+1,c) 或 (r,c±1)? 楼梯上格在低层, 爬到上层草唇顶。
+      // 简化: 若下层低层楼梯位于本格的下方相邻, 则本格(上层草唇顶)边框消失
+      if(l-1>=0 && layers[l-1]){
+        const lo=layers[l-1];
+        if((r-1>=0 && (lo[r-1][c]===3||lo[r-1][c]===4)) || (lo[r][c]===3||lo[r][c]===4)){ m=m.slice(0,1)+'1'+m.slice(1); } // N=1
+      }
       if((r-1>=0 && L[r-1][c]===1) && (r+1<ROWS && L[r+1][c]!==1)){
         // 草唇顶固定用 纯草唇行(y=128, 7-9/15)
         const sy = 128;
@@ -214,12 +220,16 @@ function draw(){
     const stairSheet=A.sheets[(sl+1<NLAYER? LAYERDEF[sl+1].color : LAYERDEF[sl].color)];
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       const sv=SL[r][c];
-      if(sv!==3 && sv!==4) continue;
-      const right = sv===4;                  // 值3=左坡(x=0), 值4=右坡(x=192)
-      const topX = right?192:0, botX = right?192:0;
-      // 上格(草坡)在楼梯格; 下格(岩底)在下方格
-      ctx.drawImage(stairSheet, topX,256,TS,TS, c*TS,r*TS,TS,TS);
-      if(r+1<ROWS) ctx.drawImage(stairSheet, botX,320,TS,TS, c*TS,(r+1)*TS,TS,TS);
+      if(sv===3 || sv===4){
+        const right = sv===4;
+        const topX = right?192:0;
+        ctx.drawImage(stairSheet, topX,256,TS,TS, c*TS,r*TS,TS,TS);
+      } else if(sv===5){
+        const upv = (r-1>=0)? SL[r-1][c] : 0;
+        const right = upv===4;
+        const botX = right?192:0;
+        ctx.drawImage(stairSheet, botX,320,TS,TS, c*TS,r*TS,TS,TS);
+      }
     }
   }
   // 网格
@@ -234,14 +244,14 @@ function cellAt(e){ const rc=cv.getBoundingClientRect(); const x=Math.floor(e.cl
 let painting=false, lastCell=null;
 function toggle(r,c){
   if(brush==='erase'){
-    // 擦除: 先清楼梯(上格+其下格), 再清其它
     const v=layers[curLayer][r][c];
     if(v===3||v===4){ layers[curLayer][r][c]=0; if(r+1<ROWS) layers[curLayer][r+1][c]=0; }
+    else if(v===5){ layers[curLayer][r][c]=0; }
     else layers[curLayer][r][c]=0;
     return;
   }
-  if(brush==='stairL'){ layers[curLayer][r][c]=3; return; }  // 左楼梯
-  if(brush==='stairR'){ layers[curLayer][r][c]=4; return; }  // 右楼梯
+  if(brush==='stairL'){ layers[curLayer][r][c]=3; if(r+1<ROWS) layers[curLayer][r+1][c]=5; return; }
+  if(brush==='stairR'){ layers[curLayer][r][c]=4; if(r+1<ROWS) layers[curLayer][r+1][c]=5; return; }
   if(curLayer===0){
     layers[0][r][c] = brush==='water'?0 : 1;
   } else {
