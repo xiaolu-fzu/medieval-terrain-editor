@@ -205,22 +205,24 @@ function draw(){
       const sy = southWater? 320 : 256;   // 落水(21-23/24) 落平地(17-19/20)
       ctx.drawImage(sheet, sx,sy,TS,TS, c*TS,r*TS,TS,TS);
     }
-    // ---------- 楼梯(值3): 同一列垂直两格, 上格=草坡(y=256), 下格=岩底(y=320); 用 color1 素材 ----------
-    // 楼梯上格(值3格 r,c) = 草坡; 其正下方 (r+1,c) 为岩底。上格会吃掉它右边草唇顶的边框。
-    // 楼梯颜色跟随上一层: 0层楼梯用 color2(第1层色), 1层用 color3... 越界则用当前层色
-    const stairSheet=A.sheets[(curLayer+1<NLAYER? LAYERDEF[curLayer+1].color : LAYERDEF[curLayer].color)];
+  }
+  // ---------- 楼梯(值3): 独立遍历所有层(含第0层), 用每层的层号 l 判定颜色(跟随上一层 l+1), 不受当前层切换影响 ----------
+  for(let sl=0; sl<NLAYER; sl++){
+    if(!layerVis[sl]) continue;
+    const SL=layers[sl];
+    const stairSheet=A.sheets[(sl+1<NLAYER? LAYERDEF[sl+1].color : LAYERDEF[sl].color)];
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      if(L[r][c]!==3) continue;
-      // 左坡(25/29, x=0) 或 右坡(28/32, x=192): 先默认左坡, 看上一层平台在哪侧确定
+      if(SL[r][c]!==3) continue;
+      // 左坡(25/29, x=0) / 右坡(28/32, x=192): 看上一层平台在哪侧
       let right=false;
-      const upL=curLayer+1;
+      const upL=sl+1;
       if(upL<NLAYER && layers[upL]){ const up=layers[upL];
         const hasR = up[r-1] && up[r-1][c+1]!==0;
         const hasL = up[r-1] && up[r-1][c-1]!==0;
         if(hasR && !hasL) right=true; else if(hasL&&!hasR) right=false; else right=true;
       }
       const topX = right?192:0, botX = right?192:0;
-      // 上格(草坡)画在值3格本身; 下格(岩底)画在其下方格
+      // 上格(草坡)在值3格; 下格(岩底)在下方格
       ctx.drawImage(stairSheet, topX,256,TS,TS, c*TS,r*TS,TS,TS);
       if(r+1<ROWS) ctx.drawImage(stairSheet, botX,320,TS,TS, c*TS,(r+1)*TS,TS,TS);
     }
