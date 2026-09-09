@@ -189,7 +189,8 @@ let shadowOn=1; // 阴影特效开关
 let shadowScale=1; // 阴影面积(格): 初始1格
 // 景观定义(帧数/尺寸/锚点偏移)由 assets.landscape 加载后提供
 function isLandscapeAt(l,r,c){ return landscape.some(s=> s.l===l && s.r===r && s.c===c); }
-function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && s.r===r); } // 只认楼梯上格(锚点); 下格只与悬崖交互
+function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && s.r===r); } // 只认楼梯上格(草面吃草唇边框用)
+function isStairAnyAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && (s.r===r||s.r+1===r)); } // 上+下格(悬崖交互用)
 function stairDirAt(l,r,c){ const s=stairs.find(x=> x.l===l && x.c===c && x.r===r); return s? s.dir : 0; }
 let curLayer=0; // 当前绘制层
 let brush='grass'; // 通用画笔: water|grass|cliff
@@ -309,7 +310,7 @@ function draw(){
     const isLipTop=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false;
       // 当前层: 草地(1) 或 该格是楼梯(额外贴图) => 草唇顶
       const v=L[rr][cc];
-      return (v===1 || isStairAt(l,rr,cc)); };
+      return (v===1 || isStairAnyAt(l,rr,cc)); };   // 楼梯上/下格都算草唇顶(与悬崖交互)
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==2) continue;
       // 基础段位: 左右邻是否悬崖(2)
