@@ -193,10 +193,14 @@ function drawFoam(l){
   const wf=A.waterFoam, F=192, L=layers[l], L0=layers[0];
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
     const v=L[r][c];
-    if(v!==1 && v!==2 && v!==3) continue;       // 该层草/悬崖
     let nearWater;
-    if(l===0){ nearWater = (r>0&&L0[r-1][c]===0)||(r+1<ROWS&&L0[r+1][c]===0)||(c>0&&L0[r][c-1]===0)||(c+1<COLS&&L0[r][c+1]===0); }
-    else { nearWater = (r+1<ROWS && L0[r+1][c]===0); }   // 落水悬崖: 下方0层是水
+    if(l===0){
+      if(v!==1 && v!==2 && v!==3) continue;     // 0层草/悬崖
+      nearWater = (r>0&&L0[r-1][c]===0)||(r+1<ROWS&&L0[r+1][c]===0)||(c>0&&L0[r][c-1]===0)||(c+1<COLS&&L0[r][c+1]===0);
+    } else {
+      if(v!==2) continue;                        // 1-3层只认悬崖(2), 草唇(1)不画水泡
+      nearWater = (r+1<ROWS && L0[r+1][c]===0);  // 落水悬崖: 下方0层是水
+    }
     if(!nearWater) continue;
     const fr=Math.floor(animTime*5)%16, k=(r*7+c*3)%16, f=((fr+k)%16)*F;
     const sZ=TS*1.3, bx=c*TS+TS/2, byy=r*TS+TS/2;   // 中心=该地形格中心(望天层)
