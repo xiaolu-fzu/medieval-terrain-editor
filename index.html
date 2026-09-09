@@ -464,6 +464,7 @@ cv.addEventListener('mousemove',e=>{
   document.getElementById('cursor').textContent=Math.floor(p.x/TS)+','+Math.floor(p.y/TS);
   if(tab==='units'){
     if(unitBrushTool==='glove' && selectedUnit){ selectedUnit.x=p.x; selectedUnit.y=p.y; draw(); return; }
+    if(unitBrushTool==='erase' && painting){ placeAt(p.x,p.y); draw(); return; }   // 角色擦除: 按住拖动连续删
     if(unitBrushTool==='place' && landscapeMode==='free' && painting){
       let ui=-1,b=1e9; for(let i=0;i<units.length;i++){ const u=units[i]; if(u.l!==curLayer)continue; const d=Math.hypot(u.x-p.x,u.y-p.y); if(d<b){b=d;ui=i;} }
       if(ui>=0){ units[ui].x=p.x; units[ui].y=p.y; }   // 长按拖动=>移动最近角色
