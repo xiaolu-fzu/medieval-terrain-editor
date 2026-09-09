@@ -223,10 +223,14 @@ function draw(){
       const sv=SL[r][c];
       if(sv===3 || sv===4){
         const right = sv===4;
-        const topX = right?192:0, botX = right?192:0;
-        // 上格(草坡)在楼梯格; 下格(岩底)叠加渲染下方格(不改数据, 不删下方瓦片)
+        const topX = right?192:0;
         ctx.drawImage(stairSheet, topX,256,TS,TS, c*TS,r*TS,TS,TS);
-        if(r+1<ROWS) ctx.drawImage(stairSheet, botX,320,TS,TS, c*TS,(r+1)*TS,TS,TS);
+      } else if(sv===5){
+        // 下格(岩底): 方向看上方格(3=左,4=右)
+        const upv = (r-1>=0)? SL[r-1][c] : 0;
+        const right = upv===4;
+        const botX = right?192:0;
+        ctx.drawImage(stairSheet, botX,320,TS,TS, c*TS,r*TS,TS,TS);
       }
     }
   }
@@ -243,12 +247,12 @@ let painting=false, lastCell=null;
 function toggle(r,c){
   if(brush==='erase'){
     const v=layers[curLayer][r][c];
-    if(v===3||v===4){ layers[curLayer][r][c]=0; }   // 上格清了; 下格数据未改(保持原瓦片)
+    if(v===3||v===4){ layers[curLayer][r][c]=0; if(r+1<ROWS) layers[curLayer][r+1][c]=0; }  // 清上格+下格
     else layers[curLayer][r][c]=0;
     return;
   }
-  if(brush==='stairL'){ layers[curLayer][r][c]=3; return; }   // 左楼梯(上格); 下格为叠加渲染, 不改数据(不删下方瓦片)
-  if(brush==='stairR'){ layers[curLayer][r][c]=4; return; }   // 右楼梯
+  if(brush==='stairL'){ layers[curLayer][r][c]=3; if(r+1<ROWS) layers[curLayer][r+1][c]=5; return; }   // 左楼梯: 一次放两格(上3下5)
+  if(brush==='stairR'){ layers[curLayer][r][c]=4; if(r+1<ROWS) layers[curLayer][r+1][c]=5; return; }   // 右楼梯
   if(curLayer===0){
     layers[0][r][c] = brush==='water'?0 : 1;
   } else {
