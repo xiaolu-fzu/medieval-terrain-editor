@@ -453,7 +453,7 @@ function placeAt(px,py){
       if(selectedLand) document.getElementById('landScaleSel').value=selectedLand.scale||1;
       return;
     }
-    // 放置: 仅当光标附近(TS*0.7内)无景观才放(避免重叠); 非几何尺寸大也按中心附近判断
+    // 放置: 无碰撞判定, 点哪放哪
     if(landscapeBrush){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale }); }
     return;
   }
