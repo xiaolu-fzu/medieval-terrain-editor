@@ -155,6 +155,7 @@ let layerVis=[true,true,true,true]; // 显隐
 let stairs=[]; // 楼梯额外贴图: {l, r, c, dir(3左/4右)}, 不影响 layers 地形数据
 let landscape=[]; // 景观: {l, r, c, kind, id} 与地形互不删除, 叠加渲染遮挡
 let animTick=0; // 动画帧计数
+let animTime=0; // 动画累计秒(驱动帧)
  // 动画累计秒(驱动平滑帧)
 let tab='terrain'; // 'terrain' | 'landscape'
 let landscapeBrush=null; // 当前景观选择 {kind, id}
@@ -192,6 +193,26 @@ function draw(){
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       ctx.drawImage(A.waterbg,0,0,TS,TS,c*TS,r*TS,TS,TS);
     }
+// ---------- 水泡特效: 落水地形(任意层草/悬崖 其下方0层是水)的 水格 自动生成, 帧错开, 最下层叠加 ----------
+  if(waterFoamOn && A.waterFoam){
+    const wf=A.waterFoam; const F=192; // 16帧,每帧192
+    const L0=layers[0];
+    for(let r=0;r<ROWS-1;r++) for(let c=0;c<COLS;c++){
+      if(L0[r+1][c]!==0) continue;      // 下方那格必须是 水(0)
+      // 上方 r 行任一层的草(1/悬崖2/3) 落水 => 在该水格(r+1,c)叠水泡
+      let falling=false;
+      for(let l=0;l<NLAYER;l++){ const v=layers[l][r][c]; if(v===1||v===2||v===3){ falling=true; break; } }
+      if(!falling) continue;
+      const fr=Math.floor(animTime*5)%16;
+      const k=(r*7+c*3)%16;                          // 每格错帧
+      const f=((fr+k)%16)*F;
+      // 缩小水泡精灵, 底部中心对齐到 水格(r+1,c) 的底边, 只占水格不盖上方悬崖
+      const sZ=TS*1.2;                                // 显示尺寸(约1.2格)
+      const bx=c*TS+TS/2, byy=(r+1)*TS+TS;            // 张底部中心(水格底)
+      ctx.drawImage(wf, f,0,F,F, bx-sZ/2, byy-sZ, sZ, sZ);
+    }
+  }
+
     // 草地顶面(值1草地, 值2悬崖也铺草底) + 水岸边用普通草地掩码
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       const v=layers[0][r][c];
@@ -304,26 +325,6 @@ function draw(){
       else ctx.drawImage(im, 0,0,baseW,baseH, cx-fw/2, cy-fh, fw, fh);
     }
   }
-// ---------- 水泡特效: 落水地形(任意层草/悬崖 其下方0层是水)的 水格 自动生成, 帧错开, 最下层叠加 ----------
-  if(waterFoamOn && A.waterFoam){
-    const wf=A.waterFoam; const F=192; // 16帧,每帧192
-    const L0=layers[0];
-    for(let r=0;r<ROWS-1;r++) for(let c=0;c<COLS;c++){
-      if(L0[r+1][c]!==0) continue;      // 下方那格必须是 水(0)
-      // 上方 r 行任一层的草(1/悬崖2/3) 落水 => 在该水格(r+1,c)叠水泡
-      let falling=false;
-      for(let l=0;l<NLAYER;l++){ const v=layers[l][r][c]; if(v===1||v===2||v===3){ falling=true; break; } }
-      if(!falling) continue;
-      const fr=Math.floor(animTime*5)%16;
-      const k=(r*7+c*3)%16;                          // 每格错帧
-      const f=((fr+k)%16)*F;
-      // 缩小水泡精灵, 底部中心对齐到 水格(r+1,c) 的底边, 只占水格不盖上方悬崖
-      const sZ=TS*1.2;                                // 显示尺寸(约1.2格)
-      const bx=c*TS+TS/2, byy=(r+1)*TS+TS;            // 张底部中心(水格底)
-      ctx.drawImage(wf, f,0,F,F, bx-sZ/2, byy-sZ, sZ, sZ);
-    }
-  }
-
   // 网格
   ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
   for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*TS+.5,0);ctx.lineTo(c*TS+.5,H());ctx.stroke();}
