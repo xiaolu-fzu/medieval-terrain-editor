@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>地形编辑器 · 图层 v7</title>
+<title>地形编辑器 · 图层</title>
 <style>
   :root{ --amber:#f5b942; --text:#e8e9ec; --muted:#9aa0ab; --line:#2a2f38; --panel:#151a21; }
   *{margin:0;padding:0;box-sizing:border-box;}
@@ -53,13 +53,13 @@
 <body>
 <div class="app">
   <div class="topbar">
-    <h1>地形编辑器 <span class="dot">·</span> 图层 <span class="dot">·</span> v7</h1>
+    <h1>地形编辑器 <span class="dot">·</span> 图层</h1>
     <span class="hint">选层绘制 · 勾选显示 · 第0层 水/草地 · 1-3层 草地/高处地面</span>
     <div style="display:flex;gap:6px;margin-left:auto;">
       <button class="btn" id="foamBtn">水泡:开</button>
-      <div class="field" style="width:64px"><label>水泡</label><input type="number" id="foamScale" value="1" min="0.4" max="4" step="0.1"></div>
+      <div class="field" style="width:64px"><label>水泡</label><input type="number" id="foamScale" value="3" min="0.4" max="4" step="0.1"></div>
       <button class="btn" id="shadowBtn">阴影:开</button>
-      <div class="field" style="width:64px"><label>阴影</label><input type="number" id="shadowScale" value="1" min="0.4" max="4" step="0.1"></div>
+      <div class="field" style="width:64px"><label>阴影</label><input type="number" id="shadowScale" value="3" min="0.4" max="4" step="0.1"></div>
       <button class="btn" id="exportBtn">导出</button>
       <button class="btn" id="importBtn">导入</button>
       <input type="file" id="importFile" accept=".json" style="display:none">
@@ -184,9 +184,9 @@ let selectedLand=null; // 手套选中的景观
 let landscapeMode='geom'; // 'geom'(几何,吸附格子) | 'free'(自由,任意坐标)
 let landScale=1; // 景观缩放: 1=原大小, <1缩小, >1放大
 let waterFoamOn=1; // 水泡特效开关(1开 0关)
-let foamScale=1; // 水泡面积(格): 初始1格
+let foamScale=3; // 水泡面积(格): 初始3
 let shadowOn=1; // 阴影特效开关
-let shadowScale=1; // 阴影面积(格): 初始1格
+let shadowScale=3; // 阴影面积(格): 初始3
 // 景观定义(帧数/尺寸/锚点偏移)由 assets.landscape 加载后提供
 function isLandscapeAt(l,r,c){ return landscape.some(s=> s.l===l && s.r===r && s.c===c); }
 function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && s.r===r); } // 只认楼梯上格(草面吃草唇边框用)
