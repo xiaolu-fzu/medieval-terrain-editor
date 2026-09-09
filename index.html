@@ -58,6 +58,8 @@
     <div style="display:flex;gap:6px;margin-left:auto;">
       <button class="btn" id="foamBtn">水泡:开</button>
       <div class="field" style="width:64px"><label>水泡</label><input type="number" id="foamScale" value="1" min="0.4" max="4" step="0.1"></div>
+      <button class="btn" id="shadowBtn">阴影:开</button>
+      <div class="field" style="width:64px"><label>阴影</label><input type="number" id="shadowScale" value="1" min="0.4" max="4" step="0.1"></div>
       <button class="btn" id="exportBtn">导出</button>
       <button class="btn" id="importBtn">导入</button>
       <input type="file" id="importFile" accept=".json" style="display:none">
@@ -166,6 +168,8 @@ let landscapeMode='geom'; // 'geom'(几何,吸附格子) | 'free'(自由,任意�
 let landScale=1; // 景观缩放: 1=原大小, <1缩小, >1放大
 let waterFoamOn=1; // 水泡特效开关(1开 0关)
 let foamScale=1; // 水泡面积(格): 初始1格
+let shadowOn=1; // 阴影特效开关
+let shadowScale=1; // 阴影面积(格): 初始1格
 // 景观定义(帧数/尺寸/锚点偏移)由 assets.landscape 加载后提供
 function isLandscapeAt(l,r,c){ return landscape.some(s=> s.l===l && s.r===r && s.c===c); }
 function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && (s.r===r||s.r+1===r)); }
@@ -209,6 +213,19 @@ function drawFoam(l){
     ctx.drawImage(wf, f,0,F,F, bx-sZ/2, byy-sZ/2, sZ, sZ);
   }
 }
+// 阴影: 草地版水泡 —— 画在 落草地悬崖(1-3层悬崖,其下方0层是草地) 的悬崖格中心(望天层: 悬崖之下)
+function drawShadow(l){
+  if(!shadowOn || !A.shadow) return;
+  const sh=A.shadow, F=192, L=layers[l], L0=layers[0];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if(l===0) continue;                        // 阴影只在悬崖层
+    if(L[r][c]!==2) continue;                  // 只悬崖(2)
+    if(!(r+1<ROWS && L0[r+1][c]===1)) continue;  // 悬崖下方0层是草地(1) => 落草地 => 阴影
+    const fr=Math.floor(animTime*5)%16, k=(r*7+c*3)%16, f=((fr+k)%16)*F;
+    const sZ=TS*shadowScale, bx=c*TS+TS/2, byy=r*TS+TS/2;  // 望天层: 悬崖格中心
+    ctx.drawImage(sh, f,0,F,F, bx-sZ/2, byy-sZ/2, sZ, sZ);
+  }
+}
 function draw(){
   ctx.fillStyle='#0e1a24'; ctx.fillRect(0,0,W(),H());
   // 第0层：水/草地/悬崖(岸边+南向悬崖自动)
@@ -245,6 +262,7 @@ function draw(){
   for(let l=1;l<NLAYER;l++){
     if(!layerVis[l]) continue;
     if(waterFoamOn) drawFoam(l);           // 落水悬崖的水泡(画在悬崖格, 望天层: 悬崖之下)
+    if(shadowOn) drawShadow(l);            // 落草地悬崖的阴影(画在悬崖格, 望天层)
     const sheet=A.sheets[LAYERDEF[l].color];
     const L=layers[l];
     // ---------- 先画草地(值1, 含草唇顶) ----------
@@ -527,6 +545,8 @@ function importJson(file){
   reader.readAsText(file);
 }
 document.getElementById('foamScale').oninput=e=>{ foamScale=Math.max(0.4,Math.min(4,+e.target.value||1)); draw(); };
+document.getElementById('shadowScale').oninput=e=>{ shadowScale=Math.max(0.4,Math.min(4,+e.target.value||1)); draw(); };
+document.getElementById('shadowBtn').onclick=()=>{ shadowOn=shadowOn?0:1; document.getElementById('shadowBtn').textContent='阴影:'+(shadowOn?'开':'关'); draw(); };
 document.getElementById('foamBtn').onclick=()=>{ waterFoamOn=waterFoamOn?0:1; document.getElementById('foamBtn').textContent='水泡:'+(waterFoamOn?'开':'关'); draw(); };
 document.getElementById('exportBtn').onclick=exportJson;
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
@@ -564,9 +584,9 @@ Promise.all([
   img('assets/landscape/rock1.png'),img('assets/landscape/rock2.png'),img('assets/landscape/cloud1.png'),img('assets/landscape/wrock1.png'),
   img('assets/landscape/buildings/castle.png'),img('assets/landscape/buildings/house1.png'),img('assets/landscape/buildings/house2.png'),img('assets/landscape/buildings/house3.png'),
   img('assets/landscape/buildings/monastery.png'),img('assets/landscape/buildings/barracks.png'),img('assets/landscape/buildings/archery.png'),img('assets/landscape/buildings/tower.png'),
-  img('assets/tiles/water_foam.png')
-]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower, waterFoam])=>{
-  A={sheets:{color1,color2,color3,color4},waterbg,waterFoam};
+  img('assets/tiles/water_foam.png'),img('assets/tiles/shadow.png')
+]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower, waterFoam, shadowImg])=>{
+  A={sheets:{color1,color2,color3,color4},waterbg,waterFoam,shadow:shadowImg};
   A.landscape={
     bush:{imgs:[lsBush1,lsBush2], fw:128, fh:128, frames:8, fps:8, kind:'bush', label:'灌木'},
     tree:{imgs:[lsTree1,lsTree2], fw:192, fh:256, frames:8, fps:6, kind:'tree', label:'树'},
