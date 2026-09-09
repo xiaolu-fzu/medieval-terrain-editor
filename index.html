@@ -167,8 +167,8 @@ function draw(){
       if(L[r][c]!==1) continue;
       // 楼梯吃边框: 左边格是楼梯上格(值3) => 掩码W强制1; 右边格是楼梯上格 => 掩码E强制1
       let m=maskHill(l,r,c);
-      if(c-1>=0 && L[r][c-1]===3) m = m.slice(0,3)+'1';      // W=1
-      if(c+1<COLS && L[r][c+1]===3) m = m.slice(0,1)+'1'+m.slice(2); // E=1
+      if(c-1>=0 && (L[r][c-1]===3||L[r][c-1]===4)) m = m.slice(0,3)+'1';      // W=1 (左/右楼梯都算)
+      if(c+1<COLS && (L[r][c+1]===3||L[r][c+1]===4)) m = m.slice(0,1)+'1'+m.slice(2); // E=1
       if((r-1>=0 && L[r-1][c]===1) && (r+1<ROWS && L[r+1][c]!==1)){
         // 草唇顶固定用 纯草唇行(y=128, 7-9/15)
         const sy = 128;
@@ -180,7 +180,8 @@ function draw(){
       }
     }
     // ---------- 再画悬崖(值2)在最上：基础段位(按左右悬崖邻) + 草唇顶修正(左右草唇顶) ----------
-    const isLipTop=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false; return L[rr][cc]===1; };
+    // 草唇顶(悬崖修正): 草地(1)或楼梯(3/4)都算, 悬崖(2)/空(0)不算 —— 楼梯横向等效草唇顶
+    const isLipTop=(rr,cc)=>{ if(rr<0||rr>=ROWS||cc<0||cc>=COLS) return false; const v=L[rr][cc]; return v===1||v===3||v===4; };
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       if(L[r][c]!==2) continue;
       // 基础段位: 左右邻是否悬崖(2)
@@ -212,17 +213,11 @@ function draw(){
     const SL=layers[sl];
     const stairSheet=A.sheets[(sl+1<NLAYER? LAYERDEF[sl+1].color : LAYERDEF[sl].color)];
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      if(SL[r][c]!==3) continue;
-      // 左坡(25/29, x=0) / 右坡(28/32, x=192): 看上一层平台在哪侧
-      let right=false;
-      const upL=sl+1;
-      if(upL<NLAYER && layers[upL]){ const up=layers[upL];
-        const hasR = up[r-1] && up[r-1][c+1]!==0;
-        const hasL = up[r-1] && up[r-1][c-1]!==0;
-        if(hasR && !hasL) right=true; else if(hasL&&!hasR) right=false; else right=true;
-      }
+      const sv=SL[r][c];
+      if(sv!==3 && sv!==4) continue;
+      const right = sv===4;                  // 值3=左坡(x=0), 值4=右坡(x=192)
       const topX = right?192:0, botX = right?192:0;
-      // 上格(草坡)在值3格; 下格(岩底)在下方格
+      // 上格(草坡)在楼梯格; 下格(岩底)在下方格
       ctx.drawImage(stairSheet, topX,256,TS,TS, c*TS,r*TS,TS,TS);
       if(r+1<ROWS) ctx.drawImage(stairSheet, botX,320,TS,TS, c*TS,(r+1)*TS,TS,TS);
     }
@@ -238,13 +233,18 @@ function resizeCanvas(){ cv.width=W(); cv.height=H(); }
 function cellAt(e){ const rc=cv.getBoundingClientRect(); const x=Math.floor(e.clientX-rc.left),y=Math.floor(e.clientY-rc.top); const c=Math.floor(x/TS),r=Math.floor(y/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return null; return {r,c}; }
 let painting=false, lastCell=null;
 function toggle(r,c){
-  if(brush==='erase'){ layers[curLayer][r][c]=0; return; }
-  if(brush==='stair'){ layers[curLayer][r][c]=3; return; }  // 楼梯(爬到上一层)
+  if(brush==='erase'){
+    // 擦除: 先清楼梯(上格+其下格), 再清其它
+    const v=layers[curLayer][r][c];
+    if(v===3||v===4){ layers[curLayer][r][c]=0; if(r+1<ROWS) layers[curLayer][r+1][c]=0; }
+    else layers[curLayer][r][c]=0;
+    return;
+  }
+  if(brush==='stairL'){ layers[curLayer][r][c]=3; return; }  // 左楼梯
+  if(brush==='stairR'){ layers[curLayer][r][c]=4; return; }  // 右楼梯
   if(curLayer===0){
-    // 第0层: 只有 水(0)/草地(1)
     layers[0][r][c] = brush==='water'?0 : 1;
   } else {
-    // 1-3层: 草地画笔->草面(1), 悬崖画笔->悬崖(2)。分开绘制, 同值格锁定不再重复画
     const v = brush==='cliff' ? 2 : 1;
     if(layers[curLayer][r][c]===0) layers[curLayer][r][c]=v;
   }
@@ -274,8 +274,8 @@ function renderLayerList(){
 function renderBrushPanel(){
   const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
   title.textContent = '第'+curLayer+'层 画笔';
-  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['stair','楼梯'],['erase','橡皮擦']]
-                            : [['grass','草地'],['cliff','悬崖'],['stair','楼梯'],['erase','橡皮擦']];
+  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['stairL','左楼梯'],['stairR','右楼梯'],['erase','橡皮擦']]
+                            : [['grass','草地'],['cliff','悬崖'],['stairL','左楼梯'],['stairR','右楼梯'],['erase','橡皮擦']];
   box.innerHTML='';
   for(const [id,label] of opts){
     const b=document.createElement('button'); b.className='btn'+(brush===id?' on':''); b.textContent=label;
