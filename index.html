@@ -186,15 +186,17 @@ function maskHill(l,r,c){
 
 
 // 水泡特效: 画 层 l 的落水地形(草/悬崖) 下方(0层水格)的水泡(帧错开动画), 中心对齐水格
-// 水泡: 望天层(浮于水面之上, 地形之下) —— 画在 邻水的0层草/悬崖格 中心(非下方水格)
-function drawFoam(){
+// 水泡: 望天层(浮于水面之上, 地形之下) —— 画在 该层落水地形格 中心
+// 0层: 草/悬崖 邻水(四向); 1-3层: 悬崖 落水(其下方0层是水)
+function drawFoam(l){
   if(!waterFoamOn || !A.waterFoam) return;
-  const wf=A.waterFoam, F=192, L0=layers[0];
+  const wf=A.waterFoam, F=192, L=layers[l], L0=layers[0];
   for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-    const v=L0[r][c];
-    if(v!==1 && v!==2 && v!==3) continue;       // 0层草/悬崖
-    // 该格 邻水(四向任一为0) => 接触水面 => 水泡浮在此格
-    const nearWater = (r>0&&L0[r-1][c]===0)||(r+1<ROWS&&L0[r+1][c]===0)||(c>0&&L0[r][c-1]===0)||(c+1<COLS&&L0[r][c+1]===0);
+    const v=L[r][c];
+    if(v!==1 && v!==2 && v!==3) continue;       // 该层草/悬崖
+    let nearWater;
+    if(l===0){ nearWater = (r>0&&L0[r-1][c]===0)||(r+1<ROWS&&L0[r+1][c]===0)||(c>0&&L0[r][c-1]===0)||(c+1<COLS&&L0[r][c+1]===0); }
+    else { nearWater = (r+1<ROWS && L0[r+1][c]===0); }   // 落水悬崖: 下方0层是水
     if(!nearWater) continue;
     const fr=Math.floor(animTime*5)%16, k=(r*7+c*3)%16, f=((fr+k)%16)*F;
     const sZ=TS*2.4, bx=c*TS+TS/2, byy=r*TS+TS/2;   // 中心=该地形格中心(望天层)
@@ -209,7 +211,7 @@ function draw(){
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
       ctx.drawImage(A.waterbg,0,0,TS,TS,c*TS,r*TS,TS,TS);
     }
-    if(waterFoamOn) drawFoam(); // 水泡(邻水0层草/悬崖, 望天层: 水之上地形之下)
+    if(waterFoamOn) drawFoam(0); // 水泡(0层草/悬崖, 望天层: 水之上地形之下)
 
     // 草地顶面(值1草地, 值2悬崖也铺草底) + 水岸边用普通草地掩码
     for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
@@ -236,6 +238,7 @@ function draw(){
   // 第1/2/3层 高处地面 —— 分开绘制：草地(值1)与悬崖(值2)各自独立，各守各的规则
   for(let l=1;l<NLAYER;l++){
     if(!layerVis[l]) continue;
+    if(waterFoamOn) drawFoam(l);           // 落水悬崖的水泡(画在悬崖格, 望天层: 悬崖之下)
     const sheet=A.sheets[LAYERDEF[l].color];
     const L=layers[l];
     // ---------- 先画草地(值1, 含草唇顶) ----------
