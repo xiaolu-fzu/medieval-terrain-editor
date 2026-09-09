@@ -642,7 +642,13 @@ document.getElementById('demoCliff').onclick=()=>{
   fetch('terrain-map.json', { cache:'no-store' })
     .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(d=>{ try{ applyData(d); }catch(e){ alert('示例1 应用失败: '+e.message); } })
-    .catch(e=>{ alert('示例1 加载失败: '+e.message+'\n页面: '+location.href+'\n目标: '+new URL('terrain-map.json', location.href).href); });
+    .catch(e=>{
+  if(location.protocol==='file:'){
+    alert('当前是 file:// 打开, 浏览器禁止 fetch 加载 json。\n请改用 http 访问: http://127.0.0.1:8131/ (服务器在运行)');
+  } else {
+    alert('示例1 加载失败: '+e.message+'\n页面: '+location.href+'\n目标: '+new URL('terrain-map.json', location.href).href);
+  }
+});
 };
 document.getElementById('applySize').onclick=()=>{
   const nr=Math.max(4,Math.min(200,+document.getElementById('rows').value||ROWS));
