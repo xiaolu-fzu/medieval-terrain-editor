@@ -448,7 +448,7 @@ function renderLayerList(){
 function renderBrushPanel(){
   const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
   title.textContent = '第'+curLayer+'层 画笔';
-  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['stairL','左楼梯'],['stairR','右楼梯'],['erase','橡皮擦']]
+  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['erase','橡皮擦']]
                             : [['grass','草地'],['cliff','悬崖'],['stairL','左楼梯'],['stairR','右楼梯'],['erase','橡皮擦']];
   box.innerHTML='';
   for(const [id,label] of opts){
