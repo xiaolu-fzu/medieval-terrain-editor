@@ -56,6 +56,7 @@
     <h1>地形编辑器 <span class="dot">·</span> 图层</h1>
     <span class="hint">选层绘制 · 勾选显示 · 第0层 水/草地 · 1-3层 草地/高处地面</span>
     <div style="display:flex;gap:6px;margin-left:auto;">
+      <button class="btn" id="foamBtn">水泡:开</button>
       <button class="btn" id="exportBtn">导出</button>
       <button class="btn" id="importBtn">导入</button>
       <input type="file" id="importFile" accept=".json" style="display:none">
@@ -154,13 +155,14 @@ let layerVis=[true,true,true,true]; // 显隐
 let stairs=[]; // 楼梯额外贴图: {l, r, c, dir(3左/4右)}, 不影响 layers 地形数据
 let landscape=[]; // 景观: {l, r, c, kind, id} 与地形互不删除, 叠加渲染遮挡
 let animTick=0; // 动画帧计数
-let animTime=0; // 动画累计秒(驱动平滑帧)
+ // 动画累计秒(驱动平滑帧)
 let tab='terrain'; // 'terrain' | 'landscape'
 let landscapeBrush=null; // 当前景观选择 {kind, id}
 let landBrush='place'; // 'place'(放置) | 'erase'(橡皮擦,只删景观) | 'glove'(手套,移动/缩放)
 let selectedLand=null; // 手套选中的景观
 let landscapeMode='geom'; // 'geom'(几何,吸附格子) | 'free'(自由,任意坐标)
 let landScale=1; // 景观缩放: 1=原大小, <1缩小, >1放大
+let waterFoamOn=1; // 水泡特效开关(1开 0关)
 // 景观定义(帧数/尺寸/锚点偏移)由 assets.landscape 加载后提供
 function isLandscapeAt(l,r,c){ return landscape.some(s=> s.l===l && s.r===r && s.c===c); }
 function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && (s.r===r||s.r+1===r)); }
@@ -209,6 +211,23 @@ function draw(){
         const southWater = L0[r+1][c]===0;
         const sy = southWater?320:256;
         ctx.drawImage(A.sheets['color1'], cliffSX(wLow,eLow),sy,TS,TS, c*TS,(r+1)*TS,TS,TS);
+      }
+    }
+  }
+  // ---------- 水泡特效(落水地形下方自动生成, 帧错开, 最下层叠加) ----------
+  if(waterFoamOn && A.waterFoam){
+    const wf=A.waterFoam; const F=192; // 每帧192
+    const L0=layers[0];
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      if(r+1>=ROWS) continue;
+      const top=L0[r][c];
+      const below=L0[r+1][c];
+      // 落水地形: 上方格是草(1)或悬崖(2/3), 且下方格是水(0) => 在下方水格叠水泡
+      if((top===1||top===2||top===3) && below===0){
+        const fr=Math.floor(animTime*6)%16;            // 帧错开(每格不同起帧: 用坐标)
+        const k=(r*7+c*3)%16;                          // 错帧
+        const f=((fr+k)%16)*F;
+        ctx.drawImage(wf, f,0,F,F, c*TS-F/2+TS/2, (r+1)*TS-F/2+TS/2, F, F);
       }
     }
   }
@@ -494,6 +513,7 @@ function importJson(file){
   }catch(e){ document.title='导入失败: '+e.message; } };
   reader.readAsText(file);
 }
+document.getElementById('foamBtn').onclick=()=>{ waterFoamOn=waterFoamOn?0:1; document.getElementById('foamBtn').textContent='水泡:'+(waterFoamOn?'开':'关'); draw(); };
 document.getElementById('exportBtn').onclick=exportJson;
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
 document.getElementById('importFile').addEventListener('change',e=>{ importJson(e.target.files[0]); e.target.value=''; });
@@ -529,9 +549,10 @@ Promise.all([
   img('assets/landscape/bush1.png'),img('assets/landscape/bush2.png'),img('assets/landscape/tree1.png'),img('assets/landscape/tree2.png'),
   img('assets/landscape/rock1.png'),img('assets/landscape/rock2.png'),img('assets/landscape/cloud1.png'),img('assets/landscape/wrock1.png'),
   img('assets/landscape/buildings/castle.png'),img('assets/landscape/buildings/house1.png'),img('assets/landscape/buildings/house2.png'),img('assets/landscape/buildings/house3.png'),
-  img('assets/landscape/buildings/monastery.png'),img('assets/landscape/buildings/barracks.png'),img('assets/landscape/buildings/archery.png'),img('assets/landscape/buildings/tower.png')
-]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower])=>{
-  A={sheets:{color1,color2,color3,color4},waterbg};
+  img('assets/landscape/buildings/monastery.png'),img('assets/landscape/buildings/barracks.png'),img('assets/landscape/buildings/archery.png'),img('assets/landscape/buildings/tower.png'),
+  img('assets/tiles/water_foam.png')
+]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower, waterFoam])=>{
+  A={sheets:{color1,color2,color3,color4},waterbg,waterFoam};
   A.landscape={
     bush:{imgs:[lsBush1,lsBush2], fw:128, fh:128, frames:8, fps:8, kind:'bush', label:'灌木'},
     tree:{imgs:[lsTree1,lsTree2], fw:192, fh:256, frames:8, fps:6, kind:'tree', label:'树'},
