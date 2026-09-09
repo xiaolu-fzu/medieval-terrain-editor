@@ -34,6 +34,8 @@
   .layer-row .vis{width:34px;height:20px;flex:none;display:flex;align-items:center;}
   .layer-row .vis input{width:16px;height:16px;accent-color:var(--amber);}
   .tabs{display:flex;gap:6px;margin-bottom:4px;}
+  .ico{font-size:14px;margin-right:3px;display:inline-block;}
+  .tab{display:inline-flex;align-items:center;justify-content:center;gap:3px;}
   .tab{flex:1;font-family:inherit;font-size:12px;font-weight:700;padding:6px 0;background:#222831;border:1px solid #333b46;border-radius:8px;color:var(--text);cursor:pointer;}
   .tab.on{background:var(--amber);color:#1a1a1a;border-color:var(--amber);}
   #landList{display:flex;flex-wrap:wrap;gap:6px;}
@@ -81,9 +83,9 @@
         <div class="group">
           <h3>工具</h3>
           <div class="tabs" id="landTools">
-            <button class="tab on" id="ltPlace">放置</button>
-            <button class="tab" id="ltErase">橡皮擦</button>
-            <button class="tab" id="ltGlove">手套</button>
+            <button class="tab on" id="ltPlace"><span class="ico">🖌️</span>放置</button>
+            <button class="tab" id="ltErase"><span class="ico">🧹</span>擦除</button>
+            <button class="tab" id="ltGlove"><span class="ico">🧤</span>手套</button>
           </div>
           <div class="field"><label>大小</label><input type="number" id="landScaleSel" value="1" min="0.2" max="4" step="0.1"></div>
         </div>
@@ -348,10 +350,20 @@ function placeAt(px,py){
     // 像素坐标: 几何吸附到格子中心, 自由用像素
     let x=px, y=py;
     if(landscapeMode==='geom'){ x=Math.floor(px/TS)*TS+TS/2; y=Math.floor(py/TS)*TS+TS/2; }
-    const li=landscape.findIndex(s=> s.l===curLayer && Math.abs(s.x-x)<TS/2 && Math.abs(s.y-y)<TS/2);
-    if(landBrush==='erase'){ if(li>=0){ landscape.splice(li,1); if(selectedLand===landscape) selectedLand=null; } }
-    else if(landBrush==='glove'){ selectedLand = li>=0? landscape[li] : null; if(selectedLand){ document.getElementById('landScaleSel').value=selectedLand.scale||1; } }
-    else if(landscapeBrush && li<0){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale }); }
+    // 擦除: 删光标半径内所有景观; 手套: 就近选(不论是否点中); 放置: 空隙放
+    let li=-1, best=1e9;
+    for(let i=0;i<landscape.length;i++){ const s=landscape[i]; if(s.l!==curLayer) continue;
+      const d=Math.hypot(s.x-x, s.y-y);
+      if(d<best){ best=d; li=i; }
+      if(landBrush==='erase' && d<TS*0.7){ landscape.splice(i,1); i--; }
+    }
+    if(landBrush==='erase'){ if(selectedLand && !landscape.includes(selectedLand)) selectedLand=null; return; }
+    if(landBrush==='glove'){
+      selectedLand = (best<TS*1.5)? landscape[li] : null;
+      if(selectedLand) document.getElementById('landScaleSel').value=selectedLand.scale||1;
+      return;
+    }
+    if(landscapeBrush && best>=TS*0.7 && li<0){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale }); }
     return;
   }
   const c=Math.floor(px/TS), r=Math.floor(py/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return; toggle(r,c);
@@ -362,6 +374,7 @@ cv.addEventListener('mousemove',e=>{
   document.getElementById('cursor').textContent=Math.floor(p.x/TS)+','+Math.floor(p.y/TS);
   if(tab==='landscape'){
     if(landBrush==='glove' && selectedLand){ selectedLand.x=p.x; selectedLand.y=p.y; draw(); }   // 手套: 拖动移动
+    else if(landBrush==='erase' && painting){ placeAt(p.x,p.y); draw(); }                        // 擦除: 按住拖动连续擦
     else if(landBrush==='place' && landscapeMode==='free' && painting){ placeAt(p.x,p.y); draw(); } // 自由连续放
     return;
   }
