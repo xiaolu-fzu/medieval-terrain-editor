@@ -33,6 +33,14 @@
   .layer-row .nm{font-size:12px;flex:1;}
   .layer-row .vis{width:34px;height:20px;flex:none;display:flex;align-items:center;}
   .layer-row .vis input{width:16px;height:16px;accent-color:var(--amber);}
+  .tabs{display:flex;gap:6px;margin-bottom:4px;}
+  .tab{flex:1;font-family:inherit;font-size:12px;font-weight:700;padding:6px 0;background:#222831;border:1px solid #333b46;border-radius:8px;color:var(--text);cursor:pointer;}
+  .tab.on{background:var(--amber);color:#1a1a1a;border-color:var(--amber);}
+  #landList{display:flex;flex-wrap:wrap;gap:6px;}
+  .land-item{width:72px;height:56px;background:#10151b;border:2px solid transparent;border-radius:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;}
+  .land-item.on{border-color:var(--amber);}
+  .land-item img{max-width:100%;max-height:36px;image-rendering:pixelated;}
+  .land-item .nm{font-size:10px;color:var(--muted);}
   #brushBtns{display:flex;flex-wrap:wrap;gap:6px;}
   #brushBtns .btn{flex:1;min-width:44%;padding:6px 4px;}
   .canvaswrap{overflow:auto;background:#080a0d;}
@@ -49,6 +57,16 @@
 
   <div class="main">
     <aside>
+      <div class="group">
+        <div class="tabs">
+          <button class="tab on" id="tabTerrain">地形</button>
+          <button class="tab" id="tabLandscape">景观</button>
+        </div>
+      </div>
+      <!-- 景观面板 -->
+      <div id="landPanel" style="display:none">
+        <div class="group"><h3>景观</h3><div id="landList"></div></div>
+      </div>
       <div class="group">
         <h3>画布大小</h3>
         <div class="field"><label>行</label><input type="number" id="rows" value="14" min="4" max="200"></div>
@@ -110,6 +128,12 @@ let COLS=24, ROWS=14;
 let layers=[]; for(let l=0;l<NLAYER;l++){ const g=[]; for(let r=0;r<ROWS;r++) g.push(new Array(COLS).fill(0)); layers.push(g); }
 let layerVis=[true,true,true,true]; // 显隐
 let stairs=[]; // 楼梯额外贴图: {l, r, c, dir(3左/4右)}, 不影响 layers 地形数据
+let landscape=[]; // 景观: {l, r, c, kind, id} 与地形互不删除, 叠加渲染遮挡
+let animTick=0; // 动画帧计数
+let tab='terrain'; // 'terrain' | 'landscape'
+let landscapeBrush=null; // 当前景观选择 {kind, id}
+// 景观定义(帧数/尺寸/锚点偏移)由 assets.landscape 加载后提供
+function isLandscapeAt(l,r,c){ return landscape.some(s=> s.l===l && s.r===r && s.c===c); }
 function isStairAt(l,r,c){ return stairs.some(s=> s.l===l && s.c===c && (s.r===r||s.r+1===r)); }
 function stairDirAt(l,r,c){ const s=stairs.find(x=> x.l===l && x.c===c && (x.r===r||x.r+1===r)); return s? s.dir : 0; }
 let curLayer=0; // 当前绘制层
@@ -229,6 +253,23 @@ function draw(){
     ctx.drawImage(sheet, topX,256,TS,TS, c*TS,r*TS,TS,TS);
     if(r+1<ROWS) ctx.drawImage(sheet, botX,320,TS,TS, c*TS,(r+1)*TS,TS,TS);
   }
+  // ---------- 景观(叠加贴图, 遮挡地形): 按 kind 用帧动画 ----------
+  if(A.landscape && layerVis){
+    for(const item of landscape){
+      if(!layerVis[item.l]) continue;
+      const cfg=A.landscape[item.kind];
+      if(!cfg) continue;
+      const im=cfg.imgs[item.id % cfg.imgs.length];
+      const cx=item.c*TS, cy=item.r*TS;
+      const fw=cfg.fw, fh=cfg.fh;
+      const fr=cfg.frames>1 ? Math.floor(animTick/6) % cfg.frames : 0;
+      if(item.kind==='rock'){ ctx.drawImage(im, 0,0,fw,fh, cx+(TS-fw)/2, cy+TS-fh, fw,fh); }
+      else if(item.kind==='cloud'){ ctx.drawImage(im, fr*fw,0,fw,fh, cx, cy-40, fw, fh); }
+      else { // bush / tree: 底部对齐格子
+        ctx.drawImage(im, fr*fw,0,fw,fh, cx+(TS-fw)/2, cy+TS-fh, fw,fh);
+      }
+    }
+  }
   // 网格
   ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
   for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*TS+.5,0);ctx.lineTo(c*TS+.5,H());ctx.stroke();}
@@ -240,6 +281,16 @@ function resizeCanvas(){ cv.width=W(); cv.height=H(); }
 function cellAt(e){ const rc=cv.getBoundingClientRect(); const x=Math.floor(e.clientX-rc.left),y=Math.floor(e.clientY-rc.top); const c=Math.floor(x/TS),r=Math.floor(y/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return null; return {r,c}; }
 let painting=false, lastCell=null;
 function toggle(r,c){
+  if(tab==='landscape'){
+    // 景观模式: 点空白放一个景观(当前层); 已放景观处锁定; 橡皮擦删景观(不改地形)
+    if(brush==='erase'){
+      const li=landscape.findIndex(s=> s.l===curLayer && s.r===r && s.c===c);
+      if(li>=0) landscape.splice(li,1);
+      return;
+    }
+    if(landscapeBrush && !isLandscapeAt(curLayer,r,c)){ landscape.push({ l:curLayer, r:r, c:c, kind:landscapeBrush.kind, id:landscapeBrush.id }); }
+    return;
+  }
   if(brush==='erase'){
     const v=layers[curLayer][r][c];
     // 先擦楼梯(在 stairs 中): 移除该格或其下方格的楼梯
@@ -295,105 +346,43 @@ function renderBrushPanel(){
   }
 }
 renderBrushPanel();
-document.getElementById('initWater').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=0; draw(); };
-document.getElementById('initGrass').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
-document.getElementById('demoCliff').onclick=()=>{
-  // 清空
-  for(let l=0;l<NLAYER;l++) for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[l][r][c]=0;
-  // 0层：全部草地
-  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1;
-  // 1层：一条连续悬崖带 (行6, 列5-9) => 左端+中间+右端
-  for(let c=5;c<=9;c++) layers[1][6][c]=1;
-  // 1层：一个孤立悬崖 (行8, 列14) => 窄
-  layers[1][8][14]=1;
-  // 图层显隐全开
-  for(let l=0;l<NLAYER;l++) layerVis[l]=true;
-  curLayer=1; document.getElementById('curLayer').textContent=LAYERDEF[1].name;
-  renderLayerList(); renderBrushPanel(); draw();
-};
-document.getElementById('applySize').onclick=()=>{
-  const nr=Math.max(4,Math.min(200,+document.getElementById('rows').value||ROWS));
-  const nc=Math.max(4,Math.min(200,+document.getElementById('cols').value||COLS));
-  for(let l=0;l<NLAYER;l++){
-    let g=layers[l]; g=g.slice(0,nr); while(g.length<nr) g.push(new Array(nc).fill(0));
-    for(let r=0;r<nr;r++){ g[r]=g[r].slice(0,nc); while(g[r].length<nc) g[r].push(0); }
-    layers[l]=g;
-  }
-  ROWS=nr; COLS=nc; resizeCanvas(); draw();
-};
 
-Promise.all([ img('assets/tiles/color1.png'),img('assets/tiles/color2.png'),img('assets/tiles/color3.png'),img('assets/tiles/color4.png'), img('assets/tiles/water_bg.png') ])
-.then(([color1,color2,color3,color4,waterbg])=>{ A={sheets:{color1,color2,color3,color4},waterbg}; resizeCanvas(); renderLayerList(); draw(); })
-.catch(e=>{ document.title='ERR '+e.message; });
-</script>
-</body>
-</html>
+// ---------- 景观: tab 切换 + 面板 + 动画 ----------
+function switchTab(t){
+  tab=t;
+  document.getElementById('tabTerrain').classList.toggle('on', t==='terrain');
+  document.getElementById('tabLandscape').classList.toggle('on', t==='landscape');
+  document.getElementById('landPanel').style.display = t==='landscape' ? '' : 'none';
+  // 地形 tab 显示画笔面板(brushTitle/brushBtns 的父 group), 景观隐藏; 反之亦然
+  const brushGroup=document.getElementById('brushTitle').closest('.group');
+  if(brushGroup) brushGroup.style.display = t==='terrain' ? '' : 'none';
+  if(t==='landscape') renderLandList();
+}
+document.getElementById('tabTerrain').onclick=()=>switchTab('terrain');
+document.getElementById('tabLandscape').onclick=()=>switchTab('landscape');
 
-    // ---------- 草地(值1): 后画, 叠在悬崖之上 ----------
-    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
-      if(L[r][c]!==1) continue;
-      const m=maskHill(l,r,c);               // N/E/S/W 是否接同层草地(值1)
-      const tp=AUTOTILE[m]||AUTOTILE["1111"];
-      ctx.drawImage(sheet, tp.sx,tp.sy,TS,TS, c*TS,r*TS,TS,TS);
+function renderLandList(){
+  const box=document.getElementById('landList'); box.innerHTML='';
+  if(!A.landscape) return;
+  const cats=[['bush','灌木'],['tree','树'],['rock','岩石'],['cloud','云']];
+  for(const [kind,label] of cats){
+    const cfg=A.landscape[kind]; if(!cfg) continue;
+    for(let i=0;i<cfg.imgs.length;i++){
+      const it=document.createElement('div'); it.className='land-item'+(landscapeBrush&&landscapeBrush.kind===kind&&landscapeBrush.id===i?' on':'');
+      const c=document.createElement('canvas'); c.width=72;c.height=36; const cc=c.getContext('2d'); cc.imageSmoothingEnabled=false;
+      cc.drawImage(cfg.imgs[i], 0,0,cfg.fw,cfg.fh, 0,0,54,36);
+      it.appendChild(c);
+      const nm=document.createElement('div'); nm.className='nm'; nm.textContent=label+(i+1);
+      it.appendChild(nm);
+      it.onclick=()=>{ landscapeBrush={kind,id:i}; renderLandList(); };
+      box.appendChild(it);
     }
   }
-  // 网格
-  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
-  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*TS+.5,0);ctx.lineTo(c*TS+.5,H());ctx.stroke();}
-  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*TS+.5);ctx.lineTo(W(),r*TS+.5);ctx.stroke();}
-  let cnt=0; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(layers[curLayer][r][c]) cnt++;
-  document.getElementById('landCount').textContent=cnt;
 }
-function resizeCanvas(){ cv.width=W(); cv.height=H(); }
-function cellAt(e){ const rc=cv.getBoundingClientRect(); const x=Math.floor(e.clientX-rc.left),y=Math.floor(e.clientY-rc.top); const c=Math.floor(x/TS),r=Math.floor(y/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return null; return {r,c}; }
-let painting=false, lastCell=null;
-function toggle(r,c){
-  if(brush==='erase'){ layers[curLayer][r][c]=0; return; }
-  if(curLayer===0){
-    // 第0层: 只有 水(0)/草地(1)
-    layers[0][r][c] = brush==='water'?0 : 1;
-  } else {
-    // 1-3层: 草地画笔->草面(1), 悬崖画笔->悬崖(2)。分开绘制, 同值格锁定不再重复画
-    const v = brush==='cliff' ? 2 : 1;
-    if(layers[curLayer][r][c]===0) layers[curLayer][r][c]=v;
-  }
-}
-cv.addEventListener('mousedown',e=>{ e.preventDefault(); const cell=cellAt(e); if(cell){ painting=true; lastCell=cell; toggle(cell.r,cell.c); draw(); } });
-cv.addEventListener('mousemove',e=>{ const cell=cellAt(e); if(cell) document.getElementById('cursor').textContent=cell.c+','+cell.r;
-  if(painting&&cell&&(cell.r!==lastCell.r||cell.c!==lastCell.c)){ toggle(cell.r,cell.c); lastCell=cell; draw(); } });
-cv.addEventListener('mouseup',()=>painting=false);
-cv.addEventListener('mouseleave',()=>painting=false);
+// 动画循环: 驱动景观帧
+let rafId=null;
+function startLoop(){ if(rafId) return; (function tick(){ animTick++; draw(); rafId=requestAnimationFrame(tick); })(); }
 
-// 图层列表
-function renderLayerList(){
-  const list=document.getElementById('layerList'); list.innerHTML='';
-  for(let l=0;l<NLAYER;l++){
-    const row=document.createElement('div'); row.className='layer-row'+(l===curLayer?' on':'');
-    const sw=document.createElement('div'); sw.className='sw'; sw.style.background = LAYERDEF[l].color;
-    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=LAYERDEF[l].name+(l===curLayer?' (当前)':'');
-    const vis=document.createElement('div'); vis.className='vis';
-    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=layerVis[l];
-    cb.addEventListener('click',e=>{ e.stopPropagation(); layerVis[l]=cb.checked; draw(); });
-    vis.appendChild(cb);
-    row.appendChild(sw); row.appendChild(nm); row.appendChild(vis);
-    row.onclick=()=>{ curLayer=l; brush='grass'; document.getElementById('curLayer').textContent=LAYERDEF[l].name; renderLayerList(); renderBrushPanel(); draw(); };
-    list.appendChild(row);
-  }
-}
-function renderBrushPanel(){
-  const title=document.getElementById('brushTitle'), box=document.getElementById('brushBtns');
-  title.textContent = '第'+curLayer+'层 画笔';
-  const opts = curLayer===0 ? [['water','水'],['grass','草地'],['erase','橡皮擦']]
-                            : [['grass','草地'],['cliff','悬崖'],['erase','橡皮擦']];
-  box.innerHTML='';
-  for(const [id,label] of opts){
-    const b=document.createElement('button'); b.className='btn'+(brush===id?' on':''); b.textContent=label;
-    if(id==='erase') b.classList.add('red');
-    b.onclick=()=>{ brush=id; renderBrushPanel(); };
-    box.appendChild(b);
-  }
-}
-renderBrushPanel();
 document.getElementById('initWater').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=0; draw(); };
 document.getElementById('initGrass').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
 document.getElementById('demoCliff').onclick=()=>{
@@ -421,8 +410,20 @@ document.getElementById('applySize').onclick=()=>{
   ROWS=nr; COLS=nc; resizeCanvas(); draw();
 };
 
-Promise.all([ img('assets/tiles/color1.png'),img('assets/tiles/color2.png'),img('assets/tiles/color3.png'),img('assets/tiles/color4.png'), img('assets/tiles/water_bg.png') ])
-.then(([color1,color2,color3,color4,waterbg])=>{ A={sheets:{color1,color2,color3,color4},waterbg}; resizeCanvas(); renderLayerList(); draw(); })
+Promise.all([
+  img('assets/tiles/color1.png'),img('assets/tiles/color2.png'),img('assets/tiles/color3.png'),img('assets/tiles/color4.png'), img('assets/tiles/water_bg.png'),
+  img('assets/landscape/bush1.png'),img('assets/landscape/bush2.png'),img('assets/landscape/tree1.png'),img('assets/landscape/tree2.png'),
+  img('assets/landscape/rock1.png'),img('assets/landscape/rock2.png'),img('assets/landscape/cloud1.png'),img('assets/landscape/wrock1.png')
+]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1])=>{
+  A={sheets:{color1,color2,color3,color4},waterbg};
+  A.landscape={
+    bush:{imgs:[lsBush1,lsBush2], fw:128, fh:128, frames:8, kind:'bush', label:'灌木'},
+    tree:{imgs:[lsTree1,lsTree2], fw:256, fh:256, frames:6, kind:'tree', label:'树'},
+    rock:{imgs:[lsRock1,lsRock2], fw:64, fh:64, frames:1, kind:'rock', label:'岩石'},
+    cloud:{imgs:[lsCloud1], fw:288, fh:256, frames:2, kind:'cloud', label:'云'},
+  };
+  resizeCanvas(); renderLayerList(); renderBrushPanel(); draw(); startLoop();
+})
 .catch(e=>{ document.title='ERR '+e.message; });
 </script>
 </body>
