@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>地形编辑器 · 使用教程</title>
+<style>
+:root{--bg:#0e141c;--panel:#161d27;--line:#2a3442;--text:#e8ebf0;--muted:#8b97a6;--amber:#f5b942;}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.7 system-ui,"Segoe UI","Microsoft YaHei",sans-serif;}
+.wrap{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
+nav{background:var(--panel);border-right:1px solid var(--line);padding:16px 0;position:sticky;top:0;height:100vh;overflow:auto;}
+nav a{display:block;color:var(--muted);text-decoration:none;padding:8px 18px;border-left:3px solid transparent;font-size:13px;}
+nav a:hover,nav a.on{color:var(--text);border-left-color:var(--amber);background:#1c2531;}
+main{padding:32px 40px;max-width:980px;}
+h1{font-size:24px;margin:0 0 4px;}
+h2{font-size:19px;margin:36px 0 8px;padding-top:12px;border-top:1px solid var(--line);}
+p{color:var(--muted);margin:8px 0;}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:12px 0;}
+.step b{color:var(--amber);}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;}
+button{background:#232d3b;color:var(--text);border:1px solid var(--line);border-radius:7px;padding:7px 13px;cursor:pointer;font:13px/1 inherit;}
+button.on,button:hover{background:var(--amber);color:#1a1a1a;border-color:var(--amber);}
+canvas{background:#0e1a24;border:1px solid var(--line);border-radius:8px;image-rendering:pixelated;max-width:100%;}
+.desc{font-size:12px;color:var(--muted);margin-top:6px;}
+.badge{display:inline-block;background:#1c2531;border:1px solid var(--line);border-radius:20px;padding:1px 10px;font-size:12px;color:var(--amber);margin-right:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav id="nav"></nav>
+<main>
+<h1>地形编辑器 · 使用教程</h1>
+<p>每个功能都配了<b style="color:var(--amber)">可交互演示</b>（用编辑器同款渲染逻辑实时绘制）。点按钮切换状态、播放动画。</p>
+<div id="content"></div>
+</main>
+</div>
+<script>
+const TS=64;
+const AUTOTILE={ "1111":[64,64],"0111":[64,0],"1011":[128,64],"1101":[64,128],"1110":[0,64],"0110":[0,0],"0011":[128,0],"1100":[0,128],"1001":[128,128],"0100":[0,192],"0101":[64,192],"0001":[128,192],"0010":[192,0],"1010":[192,64],"1000":[192,128],"0000":[192,192] };
+const HI=320; // 高地区偏移
+// 悬崖 sx: 窄/左/中/右 = 512/320/384/448 ; 落地 y=256, 落水 y=320
+function cliffSX(seg){ return {n:512,l:320,m:384,r:448}[seg]; }
+
+// 加载素材
+const imgs={};
+const need={
+ color1:'assets/tiles/color1.png', color2:'assets/tiles/color2.png',
+ waterbg:'assets/tiles/water_bg.png', foam:'assets/tiles/water_foam.png', shadow:'assets/tiles/shadow.png'
+};
+let ready=false, loaded=0;
+function loadImg(k,src){ const i=new Image(); i.onload=()=>{loaded++; if(loaded===Object.keys(need).length){ready=true; initAll();} }; i.src=src; imgs[k]=i; }
+for(const k in need) loadImg(k, need[k]);
+
+// 通用：把 [value 数组] 渲染成画布
+function drawTileDemo(cv, map, opts={}){
+  const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false;
+  const R=map.length, C=map[0].length;
+  cv.width=C*TS; cv.height=R*TS;
+  // 铺水底
+  for(let r=0;r<R;r++) for(let c=0;c<C;c++) ctx.drawImage(imgs.waterbg,0,0,TS,TS,c*TS,r*TS,TS,TS);
+  // 0层草地掩码
+  function mask0(r,c){ const is=(rr,cc)=>rr>=0&&rr<R&&cc>=0&&cc<C&&map[rr][cc]!==0; return ''+(is(r-1,c)?1:0)+(is(r,c+1)?1:0)+(is(r+1,c)?1:0)+(is(r,c-1)?1:0); }
+  for(let r=0;r<R;r++) for(let c=0;c<C;c++){
+    const v=map[r][c];
+    if(v===1||v===2){ const m=mask0(r,c); const tp=AUTOTILE[m]||[64,64]; ctx.drawImage(imgs.color1, tp[0],tp[1],TS,TS,c*TS,r*TS,TS,TS); }
+  }
+  // 悬崖(值2) 落水/落地 + 段位
+  for(let r=0;r<R;r++) for(let c=0;c<C;c++){
+    if(map[r][c]!==2) continue;
+    const wL=!(c-1>=0&&map[r][c-1]===2), eL=!(c+1<C&&map[r][c+1]===2);
+    let seg = (!wL&&!eL)?'n':(!wL?'l':(!eL?'r':'m'));
+    const southWater = r+1>=R || map[r+1][c]===0;
+    const sy = southWater?320:256;
+    // 悬崖顶面草地
+    const m=mask0(r,c); const tp=AUTOTILE[m]||[64,64]; ctx.drawImage(imgs.color1, tp[0],tp[1],TS,TS,c*TS,r*TS,TS,TS);
+    if(r+1<R) ctx.drawImage(imgs.color1, cliffSX(seg),sy,TS,TS,c*TS,(r+1)*TS,TS,TS);
+  }
+}
+
+// 章节注册
+const sections=[];
+function sec(id, title, html){ sections.push({id,title,html}); }
+
+// —— 各章 ——
+sec('ch1','① 第0层 · 水/草地与岸边','<div class="step"><b>规则</b>：第 0 层只有<b style="color:#fff">水(0)</b>和<b style="color:#fff">草地(1)</b>。草地邻水时，<b>16 向掩码自动拼接岸边</b>，无需手摆。</div><div id="c1"></div><div class="btns" id="b1"></div>');
+
+sec('ch2','② 第1~3层 · 草面与悬崖','<div class="step"><b>规则</b>：画草面(值1)，草面<b>朝下露出</b>会自动生成<b>悬崖</b>；悬崖落在水里→<b>落水崖</b>，落在草地→<b>落地崖</b>。</div><div id="c2"></div><div class="btns" id="b2"></div>');
+
+sec('ch3','③ 唇草 → 悬崖 的摆放顺序','<div class="step"><b>重点</b>：正确顺序是<b style="color:#fff">先画唇草(草地朝下露出的边)，再画它下方的悬崖</b>。悬崖自动衔接草唇顶，形成自然的草↔崖过渡。</div><div id="c3"></div><div class="btns" id="b3"></div>');
+
+sec('ch4','④ 悬崖段位（左端/中段/右端/孤立）','<div class="step"><b>规则</b>：悬崖段位由<b>左右邻是否也是悬崖</b>决定：孤立→<b>窄</b>、左空→<b>左端</b>、右空→<b>右端</b>、都有→<b>中段</b>。草唇顶会进一步修正段位。</div><div id="c4"></div><div class="btns" id="b4"></div>');
+
+sec('ch5','⑤ 楼梯','<div class="step"><b>规则</b>：楼梯是同一列两格（上=草坡、下=岩底），分<b>左楼梯/右楼梯</b>。上格吃草唇边框，下格只与悬崖交互。</div><div id="c5"></div><div class="btns" id="b5"></div>');
+
+sec('ch6','⑥ 气泡特效','<div class="step"><b>规则</b>：气泡自动生成在<b>落水地形</b>（0层草地邻水 + 1层悬崖落水）。<b>开关</b>可切换，<b>大小</b>可调。</div><div id="c6"></div><div class="btns" id="b6"></div>');
+
+sec('ch7','⑦ 阴影特效','<div class="step"><b>规则</b>：阴影自动生成在<b>落在草地上的悬崖</b>。开关可切换，大小可调。</div><div id="c7"></div><div class="btns" id="b7"></div>');
+
+sec('ch8','⑧ 景观 / 角色','<div class="step"><b>规则</b>：景观与角色是<b>独立叠加层</b>，与地形互不删除、可遮挡。可<b>几何(吸附格)/自由(任意坐标)</b>摆放、缩放、移动。</div><div id="c8"></div><div class="btns" id="b8"></div>');
+
+sec('ch9','⑨ 导入导出','<div class="step"><b>规则</b>：导出为 <b>JSON</b>（含地形/楼梯/景观/角色/尺寸/图层）；导入完整还原。内置<b>示例1</b>一键加载示例地图。</div>');
+
+// 渲染各章演示（素材加载后）
+function initAll(){
+  renderNav(); renderContent();
+  initCh1(); initCh2(); initCh3(); initCh4(); initCh5(); initCh6(); initCh7(); initCh8();
+}
+
+function renderNav(){
+  const n=document.getElementById('nav'); n.innerHTML='';
+  for(const s of sections){ const a=document.createElement('a'); a.href='#'+s.id; a.textContent=s.title; n.appendChild(a); }
+}
+function renderContent(){
+  const c=document.getElementById('content'); c.innerHTML='';
+  for(const s of sections){ const d=document.createElement('div'); d.id=s.id; d.innerHTML='<h2>'+s.title+'</h2>'+s.html; c.appendChild(d); }
+}
+
+// 各章交互
+function makeButtons(id, states, cb){
+  const box=document.getElementById(id); box.innerHTML='';
+  states.forEach((s,i)=>{ const b=document.createElement('button'); b.textContent=s; if(i===0)b.classList.add('on');
+    b.onclick=()=>{ [...box.children].forEach(x=>x.classList.remove('on')); b.classList.add('on'); cb(i); }; box.appendChild(b); });
+}
+function makeCanvas(id){ const d=document.getElementById(id); const cv=document.createElement('canvas'); d.appendChild(cv); return cv; }
+
+// ch1 岸边
+function initCh1(){
+  const cv=makeCanvas('c1');
+  const states=[
+    ()=>drawTileDemo(cv, [[1,1,0,0],[1,1,0,0],[0,0,0,0]]),
+    ()=>drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,0,0]]),
+    ()=>drawTileDemo(cv, [[0,1,1,1],[0,1,1,1],[0,0,1,1]]),
+  ];
+  makeButtons('b1',['一片草地(四角岸边)','草地向右延伸','草地向左下延伸'],i=>states[i]());
+  states[0]();
+}
+
+// ch2 草面+悬崖
+function initCh2(){
+  const cv=makeCanvas('c2');
+  const s1=()=>{ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[0,0,0,0]]); /* 上面草,下方水 -> 落水崖 */ };
+  const s2=()=>{ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,1,0],[1,1,0,0]]); };
+  makeButtons('c2'?'b2':'b2',['落水崖(草下是水)','落地崖(草下是草)'],i=>{ (i===0?s1:s2)(); });
+  s1();
+}
+
+// ch3 唇草->悬崖
+function initCh3(){
+  const cv=makeCanvas('c3');
+  const s1=()=>{ /* 只有唇草(草面下露出,无悬崖) */ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,1,0],[0,0,0,0]]); };
+  const s2=()=>{ /* 唇草下方放悬崖 */ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,1,0],[2,2,2,0],[0,0,0,0]]); };
+  makeButtons('b3',['① 先画唇草(草地朝下露出)','② 再画它下方的悬崖'],i=>{ (i===0?s1:s2)(); });
+  s1();
+}
+
+// ch4 悬崖段位
+function initCh4(){
+  const cv=makeCanvas('c4');
+  const s1=()=>drawTileDemo(cv, [[1,0,0],[2,0,0],[0,0,0]]);            // 孤立窄
+  const s2=()=>drawTileDemo(cv, [[1,1,1,0],[2,2,2,0],[0,0,0,0]]);       // 左+中+右
+  const s3=()=>drawTileDemo(cv, [[1,1,1,1,0],[2,2,2,2,0],[0,0,0,0,0]]); // 长带
+  makeButtons('b4',['孤立(窄)','3格(左/中/右)','长带(多中段)'],i=>{ [s1,s2,s3][i](); });
+  s1();
+}
+
+// ch5 楼梯
+function initCh5(){
+  const cv=makeCanvas('c5');
+  const s1=()=>{ drawTileDemo(cv, [[0,0,0,0],[0,0,0,0],[0,0,0,0]]); const ctx=cv.getContext('2d'); ctx.drawImage(imgs.color1,0,256,TS,TS, 1*TS,1*TS,TS,TS); ctx.drawImage(imgs.color1,0,320,TS,TS,1*TS,2*TS,TS,TS); };
+  const s2=()=>{ drawTileDemo(cv, [[0,0,0,0],[0,0,0,0],[0,0,0,0]]); const ctx=cv.getContext('2d'); ctx.drawImage(imgs.color1,192,256,TS,TS, 2*TS,1*TS,TS,TS); ctx.drawImage(imgs.color1,192,320,TS,TS,2*TS,2*TS,TS,TS); };
+  makeButtons('b5',['左楼梯(上草坡/下岩底)','右楼梯'],i=>{ (i===0?s1:s2)(); });
+  s1();
+}
+
+// ch6 气泡
+function initCh6(){
+  const cv=makeCanvas('c6'); cv.width=5*TS; cv.height=4*TS; const ctx=cv.getContext('2d');
+  let foamOn=true, foamS=1, tick=0, raf=null;
+  const map=[[1,1,1,0,0],[1,1,1,0,0],[1,1,1,0,0],[0,0,0,0,0]];
+  function render(){
+    drawTileDemo(cv, map);
+    if(foamOn){ // 0层草地邻水 -> 水泡
+      for(let r=0;r<4;r++) for(let c=0;c<5;c++){ if(map[r][c]!==1)continue;
+        const nearW=(r>0&&map[r-1][c]===0)||(r+1<4&&map[r+1][c]===0)||(c>0&&map[r][c-1]===0)||(c+1<5&&map[r][c+1]===0);
+        if(nearW){ const fr=Math.floor(tick/6)%16; const k=(r*7+c*3)%16; const f=((fr+k)%16)*192; const sz=TS*foamS;
+          ctx.drawImage(imgs.foam,f,0,192,192,c*TS+TS/2-sz/2, r*TS+TS/2-sz/2, sz, sz); } }
+    }
+  }
+  function loop(){ tick++; render(); raf=requestAnimationFrame(loop); }
+  makeButtons('b6',['气泡:开','气泡:关'],i=>{ foamOn=(i===0); render(); });
+  const box=document.getElementById('b6');
+  const sb=document.createElement('button'); sb.textContent='大小:'+foamS; sb.onclick=()=>{ foamS=foamS>=2?0.6:foamS+0.4; sb.textContent='大小:'+foamS.toFixed(1); render(); }; box.appendChild(sb);
+  render(); loop();
+}
+
+// ch7 阴影
+function initCh7(){
+  const cv=makeCanvas('c7'); cv.width=5*TS; cv.height=4*TS; const ctx=cv.getContext('2d');
+  let shOn=true, shS=1;
+  const map=[[1,1,1,0,0],[1,1,1,0,0],[2,2,2,0,0],[1,1,1,0,0]]; // 悬崖(2)下方是草地(1) -> 阴影
+  function render(){
+    drawTileDemo(cv, map);
+    if(shOn){ for(let r=0;r<4;r++) for(let c=0;c<5;c++){ if(map[r][c]!==2)continue;
+        if(r+1<4 && map[r+1][c]===1){ const sz=TS*shS; ctx.drawImage(imgs.shadow,0,0,192,192,c*TS+TS/2-sz/2, r*TS+TS/2-sz/2, sz, sz); } } }
+  }
+  makeButtons('b7',['阴影:开','阴影:关'],i=>{ shOn=(i===0); render(); });
+  const box=document.getElementById('b7');
+  const sb=document.createElement('button'); sb.textContent='大小:'+shS; sb.onclick=()=>{ shS=shS>=2?0.6:shS+0.4; sb.textContent='大小:'+shS.toFixed(1); render(); }; box.appendChild(sb);
+  render();
+}
+
+// ch8 景观/角色(说明性, 简单示意)
+function initCh8(){
+  const d=document.getElementById('c8');
+  d.innerHTML='<p style="color:var(--muted)">景观(树/灌木/建筑/资源…)与角色(5种)均为独立叠加层，支持几何/自由摆放、缩放、橡皮擦、手套移动。效果请直接在主编辑器体验（顶部「景观」「角色」选项卡）。</p>';
+}
+</script>
+</body>
+</html>
