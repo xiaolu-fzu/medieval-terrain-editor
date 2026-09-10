@@ -323,7 +323,7 @@ function draw(){
       // 草唇顶修正: 看左右邻是否草唇顶
       const lipW=isLipTop(r,c-1), lipE=isLipTop(r,c+1);
       // 落水/落地
-      const southWater = !!(r+1<ROWS && layers[0] && layers[0][r+1][c]===0);
+      const southWater = (l===1) && !!(r+1<ROWS && layers[0] && layers[0][r+1][c]===0);  // 只有1层悬崖落水
       let sx;
       if(base==='mid') sx=384;                 // 18/22 不变
       else if(base==='left'){ sx = lipW? 384 : 320; }      // 17/21: 左草唇顶->18/22
