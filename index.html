@@ -148,6 +148,18 @@ window.addEventListener('error',function(ev){ document.title='ERR '+ev.message; 
 <script>
 const TS=64, NLAYER=4; // 0,1,2,3
 const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+// ---------- 自定义鼠标光标(内嵌SVG, 体量小) ----------
+function svgCur(svg, hx, hy){ return 'url("data:image/svg+xml,'+encodeURIComponent(svg)+'") '+hx+' '+hy+', auto'; }
+const CURSOR_BRUSH = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path d='M4 20 L13 8 L17 12 L8 24 Z' fill='rgb(245,200,110)' stroke='rgb(45,38,22)' stroke-width='1.6'/><path d='M13 8 L17 4 L21 8 L17 12 Z' fill='rgb(215,220,230)' stroke='rgb(45,45,55)' stroke-width='1.6'/></svg>", 4, 20);
+const CURSOR_ERASE = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><rect x='3' y='13' width='18' height='8' rx='2' fill='rgb(242,140,160)' stroke='rgb(35,35,40)' stroke-width='1.6'/><rect x='3' y='13' width='18' height='3.4' fill='rgb(255,255,255)' opacity='0.7'/></svg>", 6, 20);
+const CURSOR_GLOVE = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path d='M8 22 L8 11 L6 12 L3 15 L3 9 L6 5 L6 3 L9 3 L9 5 L12 5 L12 3 L15 3 L15 6 L19 10 L19 17 Q19 22 13.5 22 Z' fill='rgb(250,235,190)' stroke='rgb(60,50,25)' stroke-width='1.6'/></svg>", 6, 20);
+function updateCursor(){
+  let c=CURSOR_BRUSH;
+  if(tab==='terrain'){ c = (brush==='erase') ? CURSOR_ERASE : CURSOR_BRUSH; }
+  else if(tab==='landscape'){ c = landBrush==='erase' ? CURSOR_ERASE : (landBrush==='glove' ? CURSOR_GLOVE : CURSOR_BRUSH); }
+  else if(tab==='units'){ c = unitBrushTool==='erase' ? CURSOR_ERASE : (unitBrushTool==='glove' ? CURSOR_GLOVE : CURSOR_BRUSH); }
+  cv.style.cursor = c;
+}
 function img(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('load '+src));i.src=src;});}
 const AUTOTILE={
   "1111":{sx:64,sy:64},  "0111":{sx:64,sy:0},  "1011":{sx:128,sy:64},"1101":{sx:64,sy:128},
@@ -500,7 +512,7 @@ cv.addEventListener('wheel',e=>{ if(tab==='landscape' && landBrush==='glove'){ e
   if(sl){ const d=e.deltaY>0?-0.1:0.1; sl.scale=Math.max(0.2,Math.min(4,(sl.scale||1)+d)); document.getElementById('landScaleSel').value=sl.scale; draw(); }
 } },{passive:false});
 // 工具切换
-function setLandTool(t){ landBrush=t; document.getElementById('ltPlace').classList.toggle('on',t==='place'); document.getElementById('ltErase').classList.toggle('on',t==='erase'); document.getElementById('ltGlove').classList.toggle('on',t==='glove'); }
+function setLandTool(t){ landBrush=t; updateCursor(); document.getElementById('ltPlace').classList.toggle('on',t==='place'); document.getElementById('ltErase').classList.toggle('on',t==='erase'); document.getElementById('ltGlove').classList.toggle('on',t==='glove'); }
 document.getElementById('ltPlace').onclick=()=>setLandTool('place');
 document.getElementById('ltErase').onclick=()=>setLandTool('erase');
 document.getElementById('ltGlove').onclick=()=>setLandTool('glove');
@@ -531,11 +543,12 @@ function renderBrushPanel(){
   for(const [id,label] of opts){
     const b=document.createElement('button'); b.className='btn'+(brush===id?' on':''); b.textContent=label;
     if(id==='erase') b.classList.add('red');
-    b.onclick=()=>{ brush=id; renderBrushPanel(); };
+    b.onclick=()=>{ brush=id; renderBrushPanel(); updateCursor(); };
     box.appendChild(b);
   }
 }
 renderBrushPanel();
+updateCursor();
 
 // ---------- 景观: tab 切换 + 面板 + 动画 ----------
 function switchTab(t){
@@ -549,6 +562,7 @@ function switchTab(t){
   if(brushGroup) brushGroup.style.display = t==='terrain' ? '' : 'none';
   if(t==='landscape') renderLandList();
   if(t==='units') renderUnitList();
+  updateCursor();
 }
 document.getElementById('tabTerrain').onclick=()=>switchTab('terrain');
 document.getElementById('tabLandscape').onclick=()=>switchTab('landscape');
@@ -574,7 +588,7 @@ function renderUnitList(){
     box.appendChild(it);
   }
 }
-function setUnitTool(t){ unitBrushTool=t; document.getElementById('utPlace').classList.toggle('on',t==='place'); document.getElementById('utErase').classList.toggle('on',t==='erase'); document.getElementById('utGlove').classList.toggle('on',t==='glove'); }
+function setUnitTool(t){ unitBrushTool=t; updateCursor(); document.getElementById('utPlace').classList.toggle('on',t==='place'); document.getElementById('utErase').classList.toggle('on',t==='erase'); document.getElementById('utGlove').classList.toggle('on',t==='glove'); }
 document.getElementById('utPlace').onclick=()=>setUnitTool('place');
 document.getElementById('utErase').onclick=()=>setUnitTool('erase');
 document.getElementById('utGlove').onclick=()=>setUnitTool('glove');
