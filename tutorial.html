@@ -53,17 +53,19 @@ function loadImg(k,src){ const i=new Image(); i.onload=()=>{loaded++; if(loaded=
 for(const k in need) loadImg(k, need[k]);
 
 // 通用：把 [value 数组] 渲染成画布
-function drawTileDemo(cv, map, opts={}){
+function drawTileDemo(cv, map, layer=0){
   const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=false;
   const R=map.length, C=map[0].length;
   cv.width=C*TS; cv.height=R*TS;
   // 铺水底
   for(let r=0;r<R;r++) for(let c=0;c<C;c++) ctx.drawImage(imgs.waterbg,0,0,TS,TS,c*TS,r*TS,TS,TS);
-  // 0层草地掩码
-  function mask0(r,c){ const is=(rr,cc)=>rr>=0&&rr<R&&cc>=0&&cc<C&&map[rr][cc]!==0; return ''+(is(r-1,c)?1:0)+(is(r,c+1)?1:0)+(is(r+1,c)?1:0)+(is(r,c-1)?1:0); }
+  // 图层参数: layer 0=草地(color1), layer>=1=唇草(color2, 高地区偏移+320)
+  const sheet = layer===0 ? imgs.color1 : imgs.color2;
+  const OFF   = layer===0 ? 0 : HI;
+  function mask(r,c){ const is=(rr,cc)=>rr>=0&&rr<R&&cc>=0&&cc<C&&map[rr][cc]!==0; return ''+(is(r-1,c)?1:0)+(is(r,c+1)?1:0)+(is(r+1,c)?1:0)+(is(r,c-1)?1:0); }
   for(let r=0;r<R;r++) for(let c=0;c<C;c++){
     const v=map[r][c];
-    if(v===1||v===2){ const m=mask0(r,c); const tp=AUTOTILE[m]||[64,64]; ctx.drawImage(imgs.color1, tp[0],tp[1],TS,TS,c*TS,r*TS,TS,TS); }
+    if(v===1||v===2){ const m=mask(r,c); const tp=AUTOTILE[m]||[64,64]; ctx.drawImage(sheet, tp[0]+OFF,tp[1],TS,TS,c*TS,r*TS,TS,TS); }
   }
   // 悬崖(值2) 落水/落地 + 段位
   for(let r=0;r<R;r++) for(let c=0;c<C;c++){
@@ -72,9 +74,8 @@ function drawTileDemo(cv, map, opts={}){
     let seg = (!wL&&!eL)?'n':(!wL?'l':(!eL?'r':'m'));
     const southWater = r+1>=R || map[r+1][c]===0;
     const sy = southWater?320:256;
-    // 悬崖顶面草地
-    const m=mask0(r,c); const tp=AUTOTILE[m]||[64,64]; ctx.drawImage(imgs.color1, tp[0],tp[1],TS,TS,c*TS,r*TS,TS,TS);
-    if(r+1<R) ctx.drawImage(imgs.color1, cliffSX(seg),sy,TS,TS,c*TS,(r+1)*TS,TS,TS);
+    const m=mask(r,c); const tp=AUTOTILE[m]||[64,64]; ctx.drawImage(sheet, tp[0]+OFF,tp[1],TS,TS,c*TS,r*TS,TS,TS);
+    if(r+1<R) ctx.drawImage(sheet, cliffSX(seg),sy,TS,TS,c*TS,(r+1)*TS,TS,TS);
   }
 }
 
@@ -139,8 +140,8 @@ function initCh1(){
 // ch2 草面+悬崖
 function initCh2(){
   const cv=makeCanvas('c2');
-  const s1=()=>{ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[0,0,0,0]]); /* 上面草,下方水 -> 落水崖 */ };
-  const s2=()=>{ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,1,0],[1,1,0,0]]); };
+  const s1=()=>{ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[0,0,0,0]], 1); };
+  const s2=()=>{ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,1,0],[1,1,0,0]], 1); };
   makeButtons('c2'?'b2':'b2',['落水崖(草下是水)','落地崖(草下是草)'],i=>{ (i===0?s1:s2)(); });
   s1();
 }
@@ -148,8 +149,8 @@ function initCh2(){
 // ch3 唇草->悬崖
 function initCh3(){
   const cv=makeCanvas('c3');
-  const s1=()=>{ /* 只有唇草(草面下露出,无悬崖) */ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,1,0],[0,0,0,0]]); };
-  const s2=()=>{ /* 唇草下方放悬崖 */ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,1,0],[2,2,2,0],[0,0,0,0]]); };
+  const s1=()=>{ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,1,0],[0,0,0,0]], 1); };
+  const s2=()=>{ drawTileDemo(cv, [[1,1,1,0],[1,1,1,0],[1,1,1,0],[2,2,2,0],[0,0,0,0]], 1); };
   makeButtons('b3',['① 先画唇草(草地朝下露出)','② 再画它下方的悬崖'],i=>{ (i===0?s1:s2)(); });
   s1();
 }
@@ -157,9 +158,9 @@ function initCh3(){
 // ch4 悬崖段位
 function initCh4(){
   const cv=makeCanvas('c4');
-  const s1=()=>drawTileDemo(cv, [[1,0,0],[2,0,0],[0,0,0]]);            // 孤立窄
-  const s2=()=>drawTileDemo(cv, [[1,1,1,0],[2,2,2,0],[0,0,0,0]]);       // 左+中+右
-  const s3=()=>drawTileDemo(cv, [[1,1,1,1,0],[2,2,2,2,0],[0,0,0,0,0]]); // 长带
+  const s1=()=>drawTileDemo(cv, [[1,0,0],[2,0,0],[0,0,0]], 1);            // 孤立窄
+  const s2=()=>drawTileDemo(cv, [[1,1,1,0],[2,2,2,0],[0,0,0,0]], 1);       // 左+中+右
+  const s3=()=>drawTileDemo(cv, [[1,1,1,1,0],[2,2,2,2,0],[0,0,0,0,0]], 1); // 长带
   makeButtons('b4',['孤立(窄)','3格(左/中/右)','长带(多中段)'],i=>{ [s1,s2,s3][i](); });
   s1();
 }
@@ -179,7 +180,7 @@ function initCh6(){
   let foamOn=true, foamS=1, tick=0, raf=null;
   const map=[[1,1,1,0,0],[1,1,1,0,0],[1,1,1,0,0],[0,0,0,0,0]];
   function render(){
-    drawTileDemo(cv, map);
+    drawTileDemo(cv, map, 0);
     if(foamOn){ // 0层草地邻水 -> 水泡
       for(let r=0;r<4;r++) for(let c=0;c<5;c++){ if(map[r][c]!==1)continue;
         const nearW=(r>0&&map[r-1][c]===0)||(r+1<4&&map[r+1][c]===0)||(c>0&&map[r][c-1]===0)||(c+1<5&&map[r][c+1]===0);
@@ -200,7 +201,7 @@ function initCh7(){
   let shOn=true, shS=1;
   const map=[[1,1,1,0,0],[1,1,1,0,0],[2,2,2,0,0],[1,1,1,0,0]]; // 悬崖(2)下方是草地(1) -> 阴影
   function render(){
-    drawTileDemo(cv, map);
+    drawTileDemo(cv, map, 1);
     if(shOn){ for(let r=0;r<4;r++) for(let c=0;c<5;c++){ if(map[r][c]!==2)continue;
         if(r+1<4 && map[r+1][c]===1){ const sz=TS*shS; ctx.drawImage(imgs.shadow,0,0,192,192,c*TS+TS/2-sz/2, r*TS+TS/2-sz/2, sz, sz); } } }
   }
