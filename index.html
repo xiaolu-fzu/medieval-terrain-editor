@@ -410,7 +410,8 @@ function draw(){
       const cx=u.x, cy=u.y;
       ctx.save();
       if((u.flip||1)<0){ ctx.translate(cx,0); ctx.scale(-1,1); ctx.translate(-cx,0); }
-      ctx.drawImage(im, fr*cfg.fw,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh, fw, fh);  // 底部中心
+      const foot=(cfg.foot||0)*s;   // 帧底部空白补偿 => 脚对齐坐标点
+      ctx.drawImage(im, fr*cfg.fw,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh+foot, fw, fh);
       ctx.restore();
     }
   }
@@ -436,10 +437,7 @@ function draw(){
     const cfg=A.units[selectedUnit.role];
     if(cfg){ const s=selectedUnit.scale||1; selBox(selectedUnit.x, selectedUnit.y, cfg.fw*s, cfg.fh*s); }
   }
-  // 网格
-  ctx.strokeStyle='rgba(255,255,255,0.05)'; ctx.lineWidth=1;
-  for(let c=0;c<=COLS;c++){ctx.beginPath();ctx.moveTo(c*TS+.5,0);ctx.lineTo(c*TS+.5,H());ctx.stroke();}
-  for(let r=0;r<=ROWS;r++){ctx.beginPath();ctx.moveTo(0,r*TS+.5);ctx.lineTo(W(),r*TS+.5);ctx.stroke();}
+  // 网格已移除(用户要求)
   let cnt=0; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(layers[curLayer][r][c]) cnt++;
   document.getElementById('landCount').textContent=cnt;
 }
@@ -781,11 +779,12 @@ Promise.all([
   };
   // 角色(待机帧动画): imgs[role], 帧宽/帧数 per role; 底部锚定
   // 角色: 每角色含 5 阵营图(byFaction)
-  const unitDef={ archer:[192,192,6,6,'弓箭手'], lancer:[320,320,12,8,'枪兵'], monk:[192,192,6,6,'僧侣'], pawn:[192,192,8,6,'步兵'], warrior:[192,192,8,6,'武士'] };
+  // foot = 帧底部空白px(角色脚不在帧底部, 渲染时下移使其对齐坐标点)
+  const unitDef={ archer:[192,192,6,6,'弓箭手',56], lancer:[320,320,12,8,'枪兵',122], monk:[192,192,6,6,'僧侣',58], pawn:[192,192,8,6,'步兵',57], warrior:[192,192,8,6,'武士',55] };
   A.units={};
-  for(const role in unitDef){ const [fw,fh,frames,fps,label]=unitDef[role];
+  for(const role in unitDef){ const [fw,fh,frames,fps,label,foot]=unitDef[role];
     const byFaction={}; for(const [f] of FACTIONS) byFaction[f]=unitImgs[f][role];
-    A.units[role]={ imgs:[byFaction.blue], byFaction, fw,fh, frames, fps, label };
+    A.units[role]={ imgs:[byFaction.blue], byFaction, fw,fh, frames, fps, label, foot };
   }
   resizeCanvas(); renderLayerList(); renderBrushPanel(); draw(); startLoop();
 })
