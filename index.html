@@ -38,6 +38,9 @@
   .tab{display:inline-flex;align-items:center;justify-content:center;gap:3px;}
   .tab{flex:1;font-family:inherit;font-size:12px;font-weight:700;padding:6px 0;background:#222831;border:1px solid #333b46;border-radius:8px;color:var(--text);cursor:pointer;}
   .tab.on{background:var(--amber);color:#1a1a1a;border-color:var(--amber);}
+  .fac-btn{display:flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid var(--line);border-radius:7px;background:#232d3b;color:var(--text);cursor:pointer;font:12px/1 inherit;}
+  .fac-btn.on{border-color:var(--amber);background:#2e3948;}
+  .fac-dot{width:12px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.4);}
   #landList{display:flex;flex-wrap:wrap;gap:6px;}
   .land-item{width:72px;height:56px;background:#10151b;border:2px solid transparent;border-radius:6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;}
   .land-item.on{border-color:var(--amber);}
@@ -74,6 +77,10 @@
           <button class="tab" id="tabLandscape">景观</button>
           <button class="tab" id="tabUnits">角色</button>
         </div>
+      </div>
+      <div class="group">
+        <h3>阵营 / 颜色</h3>
+        <div id="factionBtns" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
       </div>
       <!-- 角色面板 -->
       <div id="unitPanel" style="display:none">
@@ -186,6 +193,8 @@ let landscape=[]; // 景观: {l, r, c, kind, id} 与地形互不删除, 叠加�
 let units=[]; // 角色: {l, x, y, role, scale} 独立于景观/地形
 let unitBrush=null; // 当前角色选择 {role}
 let unitScaleVal=1; // 角色缩放
+let placeFaction='blue'; // 当前阵营(放置角色/建筑用)
+const FACTION_LIST=[['blue','蓝','#4a9eff'],['red','红','#ff5a5a'],['purple','紫','#a86bff'],['yellow','黄','#f5d020'],['black','黑','#4a4f57']];
 let animTick=0; // 动画帧计数
 let animTime=0; // 动画累计秒(驱动帧)
  // 动画累计秒(驱动平滑帧)
@@ -370,7 +379,8 @@ function draw(){
       const cfg=A.landscape[item.kind];
       if(!cfg) continue;
       const id0=item.id % cfg.imgs.length;
-      const im=cfg.imgs[id0];
+      const pool=(cfg.byFaction && item.faction && cfg.byFaction[item.faction]) ? cfg.byFaction[item.faction] : cfg.imgs;
+      const im=pool[id0] || cfg.imgs[id0];
       // 每张建筑尺寸不同用 sizes, 其它用 cfg.fw/fh
       const baseW = cfg.sizes? cfg.sizes[id0][0] : cfg.fw;
       const baseH = cfg.sizes? cfg.sizes[id0][1] : cfg.fh;
@@ -388,7 +398,7 @@ function draw(){
     for(const u of units){
       if(!layerVis[u.l]) continue;
       const cfg=A.units[u.role]; if(!cfg) continue;
-      const im=cfg.imgs[0];
+      const im=(cfg.byFaction && u.faction && cfg.byFaction[u.faction]) ? cfg.byFaction[u.faction] : cfg.imgs[0];
       const s=u.scale||1;
       const fw=cfg.fw*s, fh=cfg.fh*s;
       const fr=Math.floor(animTime*cfg.fps) % cfg.frames;   // 待机帧(时间驱动)
@@ -447,7 +457,7 @@ function placeAt(px,py){
     for(let i=0;i<units.length;i++){ const u=units[i]; if(u.l!==curLayer) continue; const d=Math.hypot(u.x-x,u.y-y); if(d<best){best=d; ui=i;} }
     if(unitBrushTool==='erase'){ if(ui>=0&&best<TS*0.8){ units.splice(ui,1); } return; }
     if(unitBrushTool==='glove'){ selectedUnit = (best<TS*1.5)? units[ui] : null; if(selectedUnit) document.getElementById('unitScale').value=selectedUnit.scale||1; return; }
-    if(unitBrush){ units.push({ l:curLayer, x:x, y:y, role:unitBrush.role, scale:unitScaleVal }); }
+    if(unitBrush){ units.push({ l:curLayer, x:x, y:y, role:unitBrush.role, scale:unitScaleVal, faction:placeFaction }); }
     return;
   }
   if(tab==='landscape'){
@@ -470,7 +480,7 @@ function placeAt(px,py){
       return;
     }
     // 放置: 无碰撞判定, 点哪放哪
-    if(landscapeBrush){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale }); }
+    if(landscapeBrush){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale, faction:placeFaction }); }
     return;
   }
   const c=Math.floor(px/TS), r=Math.floor(py/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return; toggle(r,c);
@@ -548,6 +558,7 @@ function renderBrushPanel(){
   }
 }
 renderBrushPanel();
+renderFactionPanel();
 updateCursor();
 
 // ---------- 景观: tab 切换 + 面板 + 动画 ----------
@@ -573,6 +584,16 @@ document.getElementById('modeFree').onclick=()=>setLandMode('free');
 // ---------- 角色: 列表 + 工具 ----------
 let unitBrushTool='place'; // place|erase|glove
 let selectedUnit=null;
+function renderFactionPanel(){
+  const box=document.getElementById('factionBtns'); if(!box) return;
+  box.innerHTML='';
+  for(const [id,label,color] of FACTION_LIST){
+    const b=document.createElement('button'); b.className='fac-btn'+(placeFaction===id?' on':'');
+    b.innerHTML='<span class="fac-dot" style="background:'+color+'"></span>'+label;
+    b.onclick=()=>{ placeFaction=id; renderFactionPanel(); renderUnitList(); renderLandList(); };
+    box.appendChild(b);
+  }
+}
 function renderUnitList(){
   const box=document.getElementById('unitList'); box.innerHTML='';
   if(!A.units) return;
@@ -580,7 +601,8 @@ function renderUnitList(){
     const cfg=A.units[role];
     const it=document.createElement('div'); it.className='land-item'+(unitBrush&&unitBrush.role===role?' on':'');
     const c=document.createElement('canvas'); c.width=72;c.height=48; const cc=c.getContext('2d'); cc.imageSmoothingEnabled=false;
-    cc.drawImage(cfg.imgs[0], 0,0,cfg.fw,cfg.fh, 12,0,48,48);
+    const pv=(cfg.byFaction && cfg.byFaction[placeFaction]) ? cfg.byFaction[placeFaction] : cfg.imgs[0];
+    cc.drawImage(pv, 0,0,cfg.fw,cfg.fh, 12,0,48,48);
     it.appendChild(c);
     const nm=document.createElement('div'); nm.className='nm'; nm.textContent=cfg.label;
     it.appendChild(nm);
@@ -607,7 +629,9 @@ function renderLandList(){
       const c=document.createElement('canvas'); c.width=72;c.height=48; const cc=c.getContext('2d'); cc.imageSmoothingEnabled=false;
       const baseW = cfg.sizes? cfg.sizes[i][0] : cfg.fw, baseH = cfg.sizes? cfg.sizes[i][1] : cfg.fh;
       const sd=Math.min(54/baseW, 42/baseH);
-      cc.drawImage(cfg.imgs[i], 0,0,baseW,baseH, (72-baseW*sd)/2,(48-baseH*sd)/2, baseW*sd, baseH*sd);
+      const pool=(cfg.byFaction && cfg.byFaction[placeFaction]) ? cfg.byFaction[placeFaction] : cfg.imgs;
+      const pim=pool[i]||cfg.imgs[i];
+      cc.drawImage(pim, 0,0,baseW,baseH, (72-baseW*sd)/2,(48-baseH*sd)/2, baseW*sd, baseH*sd);
       it.appendChild(c);
       const nm=document.createElement('div'); nm.className='nm'; nm.textContent= cfg.names? cfg.names[i] : (label+(i+1));
       it.appendChild(nm);
@@ -677,12 +701,22 @@ document.getElementById('applySize').onclick=()=>{
   ROWS=nr; COLS=nc; resizeCanvas(); draw();
 };
 
+// ---------- 阵营素材(5 阵营 × 角色/建筑) ----------
+const FACTIONS=[['blue','蓝'],['red','红'],['purple','紫'],['yellow','黄'],['black','黑']];
+const ROLE_KEYS=['archer','lancer','monk','pawn','warrior'];
+const BLD_ORDER=['castle','house1','house2','house3','monastery','barracks','archery','tower'];
+const unitImgs={}, bldImgs={};
+const factionTasks=[];
+for(const [f] of FACTIONS){
+  unitImgs[f]={};
+  ROLE_KEYS.forEach(r=>{ factionTasks.push(img('assets/units/'+f+'/'+r+'.png').then(im=>{ unitImgs[f][r]=im; })); });
+  bldImgs[f]=[];
+  BLD_ORDER.forEach((k,i)=>{ factionTasks.push(img('assets/landscape/buildings/'+f+'/'+k+'.png').then(im=>{ bldImgs[f][i]=im; })); });
+}
 Promise.all([
   img('assets/tiles/color1.png'),img('assets/tiles/color2.png'),img('assets/tiles/color3.png'),img('assets/tiles/color4.png'), img('assets/tiles/water_bg.png'),
   img('assets/landscape/bush1.png'),img('assets/landscape/bush2.png'),img('assets/landscape/tree1.png'),img('assets/landscape/tree2.png'),
   img('assets/landscape/rock1.png'),img('assets/landscape/rock2.png'),img('assets/landscape/cloud1.png'),img('assets/landscape/wrock1.png'),
-  img('assets/landscape/buildings/castle.png'),img('assets/landscape/buildings/house1.png'),img('assets/landscape/buildings/house2.png'),img('assets/landscape/buildings/house3.png'),
-  img('assets/landscape/buildings/monastery.png'),img('assets/landscape/buildings/barracks.png'),img('assets/landscape/buildings/archery.png'),img('assets/landscape/buildings/tower.png'),
   img('assets/tiles/water_foam.png'),img('assets/tiles/shadow.png'),
   // 补全场景素材
   img('assets/landscape/tree3.png'),img('assets/landscape/tree4.png'),
@@ -691,15 +725,15 @@ Promise.all([
   img('assets/landscape/gold_stone4.png'),img('assets/landscape/gold_stone5.png'),img('assets/landscape/gold_stone6.png'),
   img('assets/landscape/wood_resource.png'),img('assets/landscape/meat_resource.png'),img('assets/landscape/tool1.png'),img('assets/landscape/tool2.png'),img('assets/landscape/tool3.png'),img('assets/landscape/tool4.png'),
   img('assets/landscape/rubber_duck.png'),img('assets/landscape/wrock3.png'),img('assets/landscape/wrock4.png'),img('assets/landscape/sheep_idle.png'),
-  img('assets/units/archer.png'),img('assets/units/lancer.png'),img('assets/units/monk.png'),img('assets/units/pawn.png'),img('assets/units/warrior.png')
-]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower, waterFoam, shadowImg, lsTree3,lsTree4, sStump1,sStump2,sStump3,sStump4, gResource,gStone1,gStone2,gStone3,gStone4,gStone5,gStone6, wWood,wMeat,wTool1,wTool2,wTool3,wTool4, sDuck,sWrock3,sWrock4,sSheep, uArcher,uLancer,uMonk,uPawn,uWarrior])=>{
+  ...factionTasks
+]).then(([color1,color2,color3,color4,waterbg, lsBush1,lsBush2,lsTree1,lsTree2,lsRock1,lsRock2,lsCloud1,lsWrock1, waterFoam, shadowImg, lsTree3,lsTree4, sStump1,sStump2,sStump3,sStump4, gResource,gStone1,gStone2,gStone3,gStone4,gStone5,gStone6, wWood,wMeat,wTool1,wTool2,wTool3,wTool4, sDuck,sWrock3,sWrock4,sSheep]) => {
   A={sheets:{color1,color2,color3,color4},waterbg,waterFoam,shadow:shadowImg};
   A.landscape={
     bush:{imgs:[lsBush1,lsBush2], fw:128, fh:128, frames:8, fps:8, kind:'bush', label:'灌木'},
     tree:{imgs:[lsTree1,lsTree2,lsTree3,lsTree4], sizes:[[192,256],[192,256],[192,192],[192,192]], frames:8, fps:6, kind:'tree', label:'树'},
     rock:{imgs:[lsRock1,lsRock2], fw:64, fh:64, frames:1, fps:0, kind:'rock', label:'岩石'},
     cloud:{imgs:[lsCloud1], fw:576, fh:256, frames:1, fps:0, kind:'cloud', label:'云'},
-    building:{ imgs:[bCastle,bHouse1,bHouse2,bHouse3,bMonastery,bBarracks,bArchery,bTower],
+    building:{ imgs:bldImgs.blue, byFaction:bldImgs,
       sizes:[[320,256],[128,192],[128,192],[128,192],[192,320],[192,256],[192,256],[128,256]],
       frames:1, fps:0, kind:'building', label:'建筑', names:['城堡','民房1','民房2','民房3','修道院','兵营','箭楼','塔'] },
     stump:{imgs:[sStump1,sStump2,sStump3,sStump4], sizes:[[192,256],[192,256],[192,256],[192,256]], frames:1, fps:0, kind:'stump', label:'树桩'},
@@ -710,13 +744,13 @@ Promise.all([
     sheep:{imgs:[sSheep], fw:128, fh:128, frames:6, fps:6, kind:'sheep', label:'绵羊'},
   };
   // 角色(待机帧动画): imgs[role], 帧宽/帧数 per role; 底部锚定
-  A.units={
-    archer:{imgs:[uArcher], fw:192, fh:192, frames:6, fps:6, label:'弓箭手'},
-    lancer:{imgs:[uLancer], fw:320, fh:320, frames:12, fps:8, label:'枪兵'},
-    monk:{imgs:[uMonk], fw:192, fh:192, frames:6, fps:6, label:'僧侣'},
-    pawn:{imgs:[uPawn], fw:192, fh:192, frames:8, fps:6, label:'步兵'},
-    warrior:{imgs:[uWarrior], fw:192, fh:192, frames:8, fps:6, label:'武士'},
-  };
+  // 角色: 每角色含 5 阵营图(byFaction)
+  const unitDef={ archer:[192,192,6,6,'弓箭手'], lancer:[320,320,12,8,'枪兵'], monk:[192,192,6,6,'僧侣'], pawn:[192,192,8,6,'步兵'], warrior:[192,192,8,6,'武士'] };
+  A.units={};
+  for(const role in unitDef){ const [fw,fh,frames,fps,label]=unitDef[role];
+    const byFaction={}; for(const [f] of FACTIONS) byFaction[f]=unitImgs[f][role];
+    A.units[role]={ imgs:[byFaction.blue], byFaction, fw,fh, frames, fps, label };
+  }
   resizeCanvas(); renderLayerList(); renderBrushPanel(); draw(); startLoop();
 })
 .catch(e=>{ document.title='ERR '+e.message; });
