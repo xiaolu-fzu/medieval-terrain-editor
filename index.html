@@ -37,7 +37,54 @@
   .ico{font-size:14px;margin-right:3px;display:inline-block;}
   .tab{display:inline-flex;align-items:center;justify-content:center;gap:3px;}
   .tab{flex:1;font-family:inherit;font-size:12px;font-weight:700;padding:6px 0;background:#222831;border:1px solid #333b46;border-radius:8px;color:var(--text);cursor:pointer;}
-  .tab.on{background:var(--amber);color:#1a1a1a;border-color:var(--amber);}
+  .tab{position:relative;transition:background .12s,color .12s,box-shadow .12s,transform .06s;}
+.tab:hover{background:#2c3745;border-color:#46566b;}
+.tab.on{background:var(--amber);color:#141a22;border-color:#ffd479;font-weight:800;
+  box-shadow:0 0 0 2px rgba(245,185,66,.35), 0 0 14px rgba(245,185,66,.45), inset 0 -2px 0 rgba(0,0,0,.18);}
+.tab.on::after{content:'';position:absolute;left:50%;bottom:-5px;width:16px;height:3px;border-radius:2px;
+  background:var(--amber);transform:translateX(-50%);box-shadow:0 0 8px rgba(245,185,66,.9);}
+.btn.on{background:var(--amber);color:#141a22;border-color:#ffd479;font-weight:800;
+  box-shadow:0 0 0 2px rgba(245,185,66,.3), 0 0 12px rgba(245,185,66,.4);}
+.btn:hover{border-color:#46566b;background:#2c3745;}
+#gTools .tab,#gModes .tab,#unitTools .tab{font-size:12.5px;padding:8px 0;}
+.gsec{background:#0f1620;border:1px solid #24303f;border-radius:10px;padding:8px 9px;margin-bottom:8px;}
+.gsec h3{margin:0 0 6px;font-size:11.5px;letter-spacing:.06em;color:#8f97a3;font-weight:600;}
+.ui-sub{font-size:11px;color:#8f97a3;margin:8px 0 4px;letter-spacing:.05em;}
+.ui-sub:first-child{margin-top:0;}
+#uiList .land-item{width:66px;height:58px;}
+#uiList .land-item img,#uiList canvas{image-rendering:pixelated;}
+.nine-tag{font-size:9.5px;color:#7fd7ff;position:absolute;top:2px;right:3px;background:rgba(10,20,30,.8);
+  border-radius:3px;padding:0 3px;letter-spacing:.02em;}
+.land-item{position:relative;}
+.kbd{display:inline-block;min-width:17px;text-align:center;padding:1px 5px;border-radius:4px;background:#0b1219;
+  border:1px solid #2b3a4c;border-bottom-width:2px;font:11px/1.5 ui-monospace,Consolas,monospace;color:#cfd6e0;}
+#mainCharBar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11.5px;color:#8f97a3;}
+/* ---- 像素字体(全部 OFL 授权, 本地文件, 无需联网) ---- */
+@font-face{font-family:'PressStart2P';src:url('assets/fonts/PressStart2P.ttf') format('truetype');font-display:swap;}
+@font-face{font-family:'Zpix';src:url('assets/fonts/zpix.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'ArkPixel10';src:url('assets/fonts/ark-pixel-10px-zh.woff2') format('woff2');font-display:swap;}
+/* ---- UI 文字输入浮层(双击 UI 出现) ---- */
+#textEditor{position:absolute;display:none;z-index:40;background:rgba(10,16,24,.9);
+  border:2px dashed var(--amber);border-radius:6px;color:#f4e7c8;padding:4px 6px;resize:none;overflow:hidden;
+  line-height:1.25;outline:none;text-align:center;font-family:'Zpix','ArkPixel10','PressStart2P',monospace;font-size:13px;
+  box-shadow:0 0 0 3px rgba(0,0,0,.35), 0 6px 20px rgba(0,0,0,.5);}
+#textEditor::placeholder{color:#7d8794;}
+.textHint{font-size:10.5px;color:#8f97a3;line-height:1.55;margin-top:4px}
+/* ---- 顶栏图层选择(药丸) ---- */
+.topbar{flex-wrap:nowrap;}
+.hint{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.layer-bar{display:flex;gap:5px;align-items:center;margin-left:6px;flex:none}
+.layer-bar .layer-row{display:flex;align-items:center;gap:5px;padding:4px 8px 4px 9px;margin:0;
+  border-left-width:4px;border-left-style:solid;
+  border:1px solid var(--line);border-radius:7px;background:#232d3b;cursor:pointer;
+  font-size:12px;white-space:nowrap;transition:background .12s,border-color .12s;}
+.layer-bar .layer-row:hover{border-color:#46566b;background:#2c3745;}
+.layer-bar .layer-row.on{background:var(--amber);color:#141a22;border-color:#ffd479;font-weight:800;
+  box-shadow:0 0 0 2px rgba(245,185,66,.28), 0 0 10px rgba(245,185,66,.35);}
+.layer-bar .layer-row .sw{width:11px;height:11px;border-radius:3px;border:1px solid rgba(0,0,0,.45);}
+.layer-bar .layer-row .nm{font-size:12px;line-height:1;}
+.layer-bar .layer-row .vis{display:flex;align-items:center;}
+.layer-bar .layer-row .vis input{width:14px;height:14px;accent-color:var(--amber);cursor:pointer;margin:0;}
   .fac-btn{display:flex;align-items:center;gap:5px;padding:5px 9px;border:1px solid var(--line);border-radius:7px;background:#232d3b;color:var(--text);cursor:pointer;font:12px/1 inherit;}
   .fac-btn.on{border-color:var(--amber);background:#2e3948;}
   .fac-dot{width:12px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.4);}
@@ -57,7 +104,8 @@
 <div class="app">
   <div class="topbar">
     <h1>地形编辑器 <span class="dot">·</span> 图层</h1>
-    <span class="hint">选层绘制 · 勾选显示 · 第0层 水/草地 · 1-3层 草地/高处地面</span>
+    <span class="hint" title="第0层：水/草地 · 1-3层：草地/高处地面 —— 点药丸切层，勾选框控显示">选层绘制 · 勾选显示</span>
+    <div id="layerList" class="layer-bar"></div>
     <div style="display:flex;gap:6px;margin-left:auto;">
       <button class="btn" id="foamBtn">水泡:开</button>
       <div class="field" style="width:64px"><label>水泡</label><input type="number" id="foamScale" value="3" min="0.4" max="4" step="0.1"></div>
@@ -66,6 +114,7 @@
       <button class="btn" id="exportBtn">导出</button>
       <button class="btn" id="importBtn">导入</button>
       <input type="file" id="importFile" accept=".json" style="display:none">
+      <span id="expInfo" style="font-size:11px;color:#8f97a3;margin-left:6px"></span>
     </div>
   </div>
 
@@ -76,6 +125,21 @@
           <button class="tab on" id="tabTerrain">地形</button>
           <button class="tab" id="tabLandscape">景观</button>
           <button class="tab" id="tabUnits">角色</button>
+          <button class="tab" id="tabUi">UI</button>
+        </div>
+      </div>
+      <!-- 全局工具(除地形外都适用): 放置/手套/删除 + 网格/自由 -->
+      <div class="group gsec" id="globalTools" style="display:none">
+        <h3>工具（全局 · 景观/角色/UI 通用）</h3>
+        <div class="tabs" id="gTools">
+          <button class="tab on" data-gt="place"><span class="ico">🖌️</span>放置</button>
+          <button class="tab" data-gt="glove"><span class="ico">🧤</span>手套</button>
+          <button class="tab" data-gt="erase"><span class="ico">🧹</span>删除</button>
+        </div>
+        <h3 style="margin:9px 0 6px">摆放方式</h3>
+        <div class="tabs" id="gModes">
+          <button class="tab on" data-gm="grid">网格吸附</button>
+          <button class="tab" data-gm="free">自由摆放</button>
         </div>
       </div>
       <div class="group">
@@ -84,39 +148,58 @@
       </div>
       <!-- 角色面板 -->
       <div id="unitPanel" style="display:none">
+        <div class="group gsec" id="ctrlBox" style="border-color:#5a4a1e;background:#161c14">
+          <h3 style="color:#f5b942">🎮 主控角色（键盘试玩）</h3>
+          <div id="mainCharBar" style="margin-bottom:6px"></div>
+          <button class="btn amber" id="mainCharBtn">▶ 把手套选中的角色设为主控</button>
+          <button class="btn red" id="mainCharClear" style="display:none">✕ 取消主控</button>
+          <div style="margin:8px 0 4px;line-height:1.9"><span class="kbd">W</span><span class="kbd">A</span><span class="kbd">S</span><span class="kbd">D</span> 移动 ·
+            <span class="kbd">J</span> 攻击 · 农夫 <span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span> 换工具</div>
+          <div class="tabs" id="mainCharTool" style="display:none"></div>
+        </div>
         <div class="group">
-          <h3>角色工具</h3>
-          <div class="tabs" id="unitTools">
-            <button class="tab on" id="utPlace"><span class="ico">🖌️</span>放置</button>
-            <button class="tab" id="utErase"><span class="ico">🧹</span>擦除</button>
-            <button class="tab" id="utGlove"><span class="ico">🧤</span>手套</button>
-          </div>
+          <h3>选中的角色</h3>
           <div class="field"><label>大小</label><input type="number" id="unitScale" value="1" min="0.3" max="4" step="0.1"></div>
           <button class="btn" id="unitFlipBtn">↔ 左右翻转</button>
         </div>
-        <div class="group"><h3>角色</h3><div id="unitList"></div></div>
+        <div class="group"><h3>角色（点选后放置）</h3><div id="unitList"></div></div>
       </div>
       <!-- 景观面板 -->
       <div id="landPanel" style="display:none">
         <div class="group">
-          <h3>摆放模式</h3>
-          <div class="tabs">
-            <button class="tab on" id="modeGeom">几何</button>
-            <button class="tab" id="modeFree">自由</button>
-          </div>
-          <div class="field"><label>大小</label><input type="number" id="landScale" value="1" min="0.2" max="4" step="0.1"></div>
-        </div>
-        <div class="group">
-          <h3>工具</h3>
-          <div class="tabs" id="landTools">
-            <button class="tab on" id="ltPlace"><span class="ico">🖌️</span>放置</button>
-            <button class="tab" id="ltErase"><span class="ico">🧹</span>擦除</button>
-            <button class="tab" id="ltGlove"><span class="ico">🧤</span>手套</button>
-          </div>
+          <h3>选中的景观</h3>
           <div class="field"><label>大小</label><input type="number" id="landScaleSel" value="1" min="0.2" max="4" step="0.1"></div>
+          <div class="field"><label>新放大小</label><input type="number" id="landScale" value="1" min="0.2" max="4" step="0.1"></div>
           <button class="btn" id="landFlipBtn">↔ 左右翻转</button>
         </div>
         <div class="group"><h3>景观</h3><div id="landList"></div></div>
+      </div>
+      <!-- UI 面板 -->
+      <div id="uiPanel" style="display:none">
+        <div class="group">
+          <h3>选中的 UI</h3>
+          <div class="field"><label>宽</label><input type="number" id="uiW" value="320" min="16" max="2048" step="8"></div>
+          <div class="field"><label>高</label><input type="number" id="uiH" value="64" min="16" max="2048" step="8"></div>
+          <div class="field"><label>缩放</label><input type="number" id="uiScale" value="1" min="0.2" max="4" step="0.1"></div>
+          <button class="btn" id="uiFlipBtn">↔ 左右翻转</button>
+          <div class="field"><label>文字</label><input type="text" id="uiText" placeholder="双击 UI 也能打字" style="width:104px"></div>
+          <div class="field"><label>字号</label><input type="number" id="uiTextSize" value="16" min="6" max="96" step="1"></div>
+          <div class="field"><label>颜色</label><input type="color" id="uiTextColor" value="#3b2a17" style="width:44px;height:24px;padding:1px"></div>
+          <div class="field"><label>字体</label><select id="uiFont" style="width:132px;font-size:11.5px">
+            <option value="0">像素·中英混排（推荐）</option>
+            <option value="1">中文·最像素 Zpix</option>
+            <option value="2">中文·方舟像素 10px</option>
+            <option value="3">英文·Press Start 2P</option>
+          </select></div>
+          <div class="textHint">双击画布上的 UI 元素 → 在它中心直接打字（Esc 或点空白处结束）</div>
+        </div>
+        <div class="group gsec" id="nineBox" style="display:none">
+          <h3>碎片自动拼接（九宫格自动编码）</h3>
+          <div style="font-size:11px;color:#8f97a3;line-height:1.6" id="nineInfo"></div>
+          <canvas id="nineCode" width="180" height="180" style="margin-top:6px;border-radius:6px;background:#0b1219;image-rendering:pixelated"></canvas>
+          <div style="font-size:10.5px;color:#6c7684;margin-top:5px">上表 = 每个格子自动选中的拼片（TL/T/TR/L/C/R/BL/B/BR）</div>
+        </div>
+        <div class="group"><h3>UI 素材</h3><div id="uiList"></div></div>
       </div>
       <div class="group">
         <h3>画布大小</h3>
@@ -125,32 +208,56 @@
         <button class="btn amber" id="applySize">应用大小</button>
       </div>
       <div class="group">
-        <h3>图层</h3>
-        <div id="layerList"></div>
+        <h3>插入行 / 列</h3>
+        <div class="field"><label>在第</label><input type="number" id="insRowAt" value="1" min="1" max="200" style="width:56px"><label>行前插入</label></div>
+        <div class="field"><label>行数</label><input type="number" id="insRowN" value="1" min="1" max="50"></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn" id="insRowBtn" style="flex:1">↕ 插入行</button>
+          <button class="btn red" id="delRowBtn" style="flex:1">🗑 删除行</button>
+        </div>
+        <div class="field" style="margin-top:8px"><label>在第</label><input type="number" id="insColAt" value="1" min="1" max="200" style="width:56px"><label>列前插入</label></div>
+        <div class="field"><label>列数</label><input type="number" id="insColN" value="1" min="1" max="50"></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn" id="insColBtn" style="flex:1">↔ 插入列</button>
+          <button class="btn red" id="delColBtn" style="flex:1">🗑 删除列</button>
+        </div>
+        <div style="font-size:10.5px;color:#8f97a3;line-height:1.5;margin-top:5px">行列都从 <b>1</b> 开始数；插入后地形/楼梯/景观/角色会一起平移，右侧与下侧内容保留</div>
+      </div>
+      <div class="group">
+
       </div>
       <div class="group">
         <h3 id="brushTitle">第0层 画笔</h3>
         <div id="brushBtns"></div>
       </div>
       <div class="group">
-        <h3>示例</h3>
+        <h3>示例 / 清空</h3>
         <button class="btn" id="demoCliff">示例1</button>
+        <button class="btn red" id="clearAllBtn">🧹 一键清除（地形+景观+角色）</button>
+        <button class="btn" id="undoLoad" style="display:none">↩ 撤销上一步（加载/插入/清空）</button>
+        <div style="font-size:10.5px;color:#8f97a3;line-height:1.5;margin-top:4px" id="demoHint">加载示例/清空都会覆盖当前地图（地形/景观/角色），都有二次确认</div>
       </div>
+
       <div class="group">
         <h3>第0层 初始</h3>
         <button class="btn" id="initWater">全水</button>
         <button class="btn" id="initGrass">全草</button>
       </div>
     </aside>
-    <div class="canvaswrap"><canvas id="cv"></canvas></div>
+    <div class="canvaswrap" style="position:relative"><canvas id="cv"></canvas>
+      <textarea id="textEditor" spellcheck="false" placeholder="输入文字…"></textarea>
+    </div>
   </div>
 
   <div class="statusbar">
     <span>当前层：<b id="curLayer">第0层</b></span>
     <span>坐标：<b id="cursor"></b></span>
     <span>该层格数 <b id="landCount">0</b></span>
+    <span>工具：<b id="curTool">放置</b></span>
+    <span>摆放：<b id="curMode">网格吸附</b></span>
   </div>
 </div>
+<script src="ui-assets.js"></script>
 <script>
 window.addEventListener('error',function(ev){ document.title='ERR '+ev.message; });
 </script>
@@ -165,8 +272,7 @@ const CURSOR_GLOVE = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='24' 
 function updateCursor(){
   let c=CURSOR_BRUSH;
   if(tab==='terrain'){ c = (brush==='erase') ? CURSOR_ERASE : CURSOR_BRUSH; }
-  else if(tab==='landscape'){ c = landBrush==='erase' ? CURSOR_ERASE : (landBrush==='glove' ? CURSOR_GLOVE : CURSOR_BRUSH); }
-  else if(tab==='units'){ c = unitBrushTool==='erase' ? CURSOR_ERASE : (unitBrushTool==='glove' ? CURSOR_GLOVE : CURSOR_BRUSH); }
+  else { c = gTool==='erase' ? CURSOR_ERASE : (gTool==='glove' ? CURSOR_GLOVE : CURSOR_BRUSH); }
   cv.style.cursor = c;
 }
 function img(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('load '+src));i.src=src;});}
@@ -182,10 +288,10 @@ function lipSX(wLow,eLow){ if(wLow&&eLow) return 512; if(wLow) return 320; if(eL
 function cliffSX(wLow,eLow){ if(wLow&&eLow) return 512; if(wLow) return 320; if(eLow) return 448; return 384; }
 // 层定义：第0层=水/草地(黑白翻转), 1/2/3 = 高地草(用 color2/3/4 的 id5 中心草)
 const LAYERDEF=[
-  {name:"第0层", color:"color1", kind:"base"},
-  {name:"第1层", color:"color2", kind:"hill"},
-  {name:"第2层", color:"color3", kind:"hill"},
-  {name:"第3层", color:"color4", kind:"hill"},
+  {name:"第0层", color:"color1", css:"#4a86a8", kind:"base"},   // css = 顶栏药丸左侧色条用(真 CSS 颜色)
+  {name:"第1层", color:"color2", css:"#4e8f46", kind:"hill"},
+  {name:"第2层", color:"color3", css:"#69ab52", kind:"hill"},
+  {name:"第3层", color:"color4", css:"#8ecb6b", kind:"hill"},
 ];
 let COLS=24, ROWS=14;
 let layers=[]; for(let l=0;l<NLAYER;l++){ const g=[]; for(let r=0;r<ROWS;r++) g.push(new Array(COLS).fill(0)); layers.push(g); }
@@ -202,9 +308,13 @@ let animTime=0; // 动画累计秒(驱动帧)
  // 动画累计秒(驱动平滑帧)
 let tab='terrain'; // 'terrain' | 'landscape'
 let landscapeBrush=null; // 当前景观选择 {kind, id}
-let landBrush='place'; // 'place'(放置) | 'erase'(橡皮擦,只删景观) | 'glove'(手套,移动/缩放)
-let selectedLand=null; // 手套选中的景观
-let landscapeMode='geom'; // 'geom'(几何,吸附格子) | 'free'(自由,任意坐标)
+// ★ 全局工具(景观/角色/UI 通用): 放置 / 手套 / 删除
+let gTool='place';     // place | glove | erase
+let gMode='grid';      // grid(网格吸附) | free(自由摆放)
+let landBrush='place'; // (兼容旧名) 由 gTool 驱动
+let unitBrushTool='place';
+let selectedLand=null; // 手套选中的景观/UI
+let landscapeMode='geom'; // (兼容旧名) 由 gMode 驱动: geom | free
 let landScale=1; // 景观缩放: 1=原大小, <1缩小, >1放大
 let waterFoamOn=1; // 水泡特效开关(1开 0关)
 let foamScale=3; // 水泡面积(格): 初始3
@@ -268,6 +378,44 @@ function drawShadow(l){
     const sZ=TS*shadowScale, bx=c*TS+TS/2, byy=r*TS+TS/2;  // 望天层: 悬崖格中心
     ctx.drawImage(sh, 0,0,F,F, bx-sZ/2, byy-sZ/2, sZ, sZ);  // 单帧(阴影静止)
   }
+}
+// ---------- 单个景观绘制(底部中心锚定 + 翻转; 供实体排序后调用) ----------
+function drawOneLand(item){
+  const cfg=A.landscape[item.kind]; if(!cfg) return;
+  const id0=item.id % cfg.imgs.length;
+  const pool=(cfg.byFaction && item.faction && cfg.byFaction[item.faction]) ? cfg.byFaction[item.faction] : cfg.imgs;
+  const im=pool[id0] || cfg.imgs[id0];
+  const baseW = cfg.sizes? cfg.sizes[id0][0] : cfg.fw;
+  const baseH = cfg.sizes? cfg.sizes[id0][1] : cfg.fh;
+  const s=item.scale||1;
+  const cx=item.x, cy=item.y;
+  const fw=baseW*s, fh=baseH*s;
+  const fr=cfg.frames>1 ? Math.floor(animTime*cfg.fps) % cfg.frames : 0;
+  ctx.save();
+  if((item.flip||1)<0){ ctx.translate(cx,0); ctx.scale(-1,1); ctx.translate(-cx,0); }
+  if(cfg.frames>1) ctx.drawImage(im, fr*baseW,0,baseW,baseH, cx-fw/2, cy-fh, fw, fh);
+  else ctx.drawImage(im, 0,0,baseW,baseH, cx-fw/2, cy-fh, fw, fh);
+  ctx.restore();
+}
+// ---------- 单个角色绘制(动画帧 + 落脚补偿 + 逐帧身体锚点) ----------
+function drawOneUnit(u){
+  const cfg=A.units[u.role]; if(!cfg) return;
+  const s=u.scale||1, cx=u.x, cy=u.y;
+  const ac=unitAnimOf(u);
+  const aim=ac? animImg(u.faction||'blue', ac.f) : null;
+  const U=UANIM[u.role];
+  const fw0=(ac&&U)?(U.fw||cfg.fw):cfg.fw, fh0=(ac&&U)?(U.fh||cfg.fh):cfg.fh;
+  const frames=ac? ac.n : cfg.frames, fps=ac? ac.fps : cfg.fps;
+  let foot=(ac? ac.foot : (cfg.foot||0));
+  const im = aim || ((cfg.byFaction && u.faction && cfg.byFaction[u.faction]) ? cfg.byFaction[u.faction] : cfg.imgs[0]);
+  const fw=fw0*s, fh=fh0*s;
+  const fr=(frames>1)? (Math.floor(animTime*fps) % frames) : 0;
+  const HH = (u.role&&UANIM[u.role])? UANIM[u.role].H : null;
+  if(ac && ac.bodyTops && HH!=null && ac.bodyTops[fr]!=null) foot = fh0 - HH - ac.bodyTops[fr];
+  ctx.save();
+  if((u.flip||1)<0){ ctx.translate(cx,0); ctx.scale(-1,1); ctx.translate(-cx,0); }
+  ctx.drawImage(im, fr*fw0,0,fw0,fh0, cx-fw/2, cy-fh+foot*s, fw, fh);
+  ctx.restore();
 }
 function draw(){
   ctx.fillStyle='#0e1a24'; ctx.fillRect(0,0,W(),H());
@@ -374,51 +522,34 @@ function draw(){
     ctx.drawImage(sheet, topX,256,TS,TS, c*TS,r*TS,TS,TS);
     if(r+1<ROWS) ctx.drawImage(sheet, botX,320,TS,TS, c*TS,(r+1)*TS,TS,TS);
   }
-  // ---------- 景观(叠加贴图, 遮挡地形): 按 kind 用帧动画 ----------
-  if(A.landscape && layerVis){
-    for(const item of landscape){
+  // ---------- 实体(景观 + 角色 + UI): 按【层 → 底边Y】排序统一绘制 ----------
+  //   同层: 底边 Y 小的先画 => 站在建筑下方(靠前)会遮住建筑; 站在上方(靠后)被建筑遮住
+  //   跨层: 层高的后画      => 站在建筑上一层时固定遮住建筑(在下一层则被建筑遮住)
+  if(layerVis){
+    const ents=[];
+    if(A.landscape) for(const item of landscape){
       if(!layerVis[item.l]) continue;
-      const cfg=A.landscape[item.kind];
-      if(!cfg) continue;
-      const id0=item.id % cfg.imgs.length;
-      const pool=(cfg.byFaction && item.faction && cfg.byFaction[item.faction]) ? cfg.byFaction[item.faction] : cfg.imgs;
-      const im=pool[id0] || cfg.imgs[id0];
-      // 每张建筑尺寸不同用 sizes, 其它用 cfg.fw/fh
-      const baseW = cfg.sizes? cfg.sizes[id0][0] : cfg.fw;
-      const baseH = cfg.sizes? cfg.sizes[id0][1] : cfg.fh;
-      const s=item.scale||1;
-      const cx=item.x, cy=item.y;
-      const fw=baseW*s, fh=baseH*s;
-      const fr=cfg.frames>1 ? Math.floor(animTime*cfg.fps) % cfg.frames : 0;
-      // 底部中心锚定 + 左右翻转(item.flip = -1 镜像)
-      ctx.save();
-      if((item.flip||1)<0){ ctx.translate(cx,0); ctx.scale(-1,1); ctx.translate(-cx,0); }
-      if(cfg.frames>1) ctx.drawImage(im, fr*baseW,0,baseW,baseH, cx-fw/2, cy-fh, fw, fh);
-      else ctx.drawImage(im, 0,0,baseW,baseH, cx-fw/2, cy-fh, fw, fh);
-      ctx.restore();
+      ents.push({ kind: item.kind==='ui' ? 'ui' : 'land', o:item, l:item.l||0, y:item.y });
     }
-  }
-  // ---------- 角色(待机帧动画, 叠加在最上层): 底部中心锚定 ----------
-  if(A.units){
-    for(const u of units){
+    if(A.units) for(const u of units){
       if(!layerVis[u.l]) continue;
-      const cfg=A.units[u.role]; if(!cfg) continue;
-      const im=(cfg.byFaction && u.faction && cfg.byFaction[u.faction]) ? cfg.byFaction[u.faction] : cfg.imgs[0];
-      const s=u.scale||1;
-      const fw=cfg.fw*s, fh=cfg.fh*s;
-      const fr=Math.floor(animTime*cfg.fps) % cfg.frames;   // 待机帧(时间驱动)
-      const cx=u.x, cy=u.y;
-      ctx.save();
-      if((u.flip||1)<0){ ctx.translate(cx,0); ctx.scale(-1,1); ctx.translate(-cx,0); }
-      const foot=(cfg.foot||0)*s;   // 帧底部空白补偿 => 脚对齐坐标点
-      ctx.drawImage(im, fr*cfg.fw,0,cfg.fw,cfg.fh, cx-fw/2, cy-fh+foot, fw, fh);
-      ctx.restore();
+      ents.push({ kind:'unit', o:u, l:u.l||0, y:u.y });
+    }
+    ents.sort((a,b)=> (a.l-b.l) || (a.y-b.y));
+    for(const e of ents){
+      if(e.kind==='unit') drawOneUnit(e.o);
+      else if(e.kind==='ui') drawUiItem(e.o);
+      else drawOneLand(e.o);
     }
   }
   // ---------- 选中框(4角) ----------
-  function selBox(x,y,w,h){
-    const c=Math.max(10,Math.min(20,Math.min(w,h)*0.28));
-    const L=x-w/2, R=x+w/2, T=y-h, B=y;
+  function selBox(x,y,w,h,shrink){
+    // 用户要求: 选中框比精灵小一圈(默认 0.6), 只框住"主体"
+    const k=(shrink===undefined?0.6:shrink);
+    const bw=w*k, bh=h*k;
+    const c=Math.max(8,Math.min(16,Math.min(bw,bh)*0.3));
+    const L=x-bw/2, R=x+bw/2, T=y-bh, B=y;
+    w=bw; h=bh;
     ctx.strokeStyle='#f5b942'; ctx.lineWidth=2.5; ctx.beginPath();
     ctx.moveTo(L,B-c); ctx.lineTo(L,B); ctx.lineTo(L+c,B);
     ctx.moveTo(R,B-c); ctx.lineTo(R,B); ctx.lineTo(R-c,B);
@@ -428,14 +559,47 @@ function draw(){
     ctx.strokeStyle='rgba(245,185,66,.25)'; ctx.lineWidth=1; ctx.strokeRect(L,T,w,h);
   }
   if(selectedLand){
-    const cfg=A.landscape[selectedLand.kind];
-    if(cfg){ const id0=selectedLand.id%cfg.imgs.length;
-      const bw=cfg.sizes?cfg.sizes[id0][0]:cfg.fw, bh=cfg.sizes?cfg.sizes[id0][1]:cfg.fh, s=selectedLand.scale||1;
-      selBox(selectedLand.x, selectedLand.y, bw*s, bh*s); }
+    if(selectedLand.kind==='ui'){
+      // ★ UI 是"中心锚点"的矩形(单图或九宫格), 直接框住整块, 缩放置 1(不内缩)
+      const meta=uiMeta[selectedLand.id], s=selectedLand.scale||1;
+      const bw=(selectedLand.w||(meta?meta.natW:64))*s, bh=(selectedLand.h||(meta?meta.natH:64))*s;
+      selBox(selectedLand.x, selectedLand.y+bh/2, bw, bh, 1);
+    } else {
+      const cfg=A.landscape[selectedLand.kind];
+      if(cfg){ const id0=selectedLand.id%cfg.imgs.length;
+        const bw=cfg.sizes?cfg.sizes[id0][0]:cfg.fw, bh=cfg.sizes?cfg.sizes[id0][1]:cfg.fh, s=selectedLand.scale||1;
+        selBox(selectedLand.x, selectedLand.y, bw*s, bh*s); }
+    }
   }
   if(selectedUnit){
     const cfg=A.units[selectedUnit.role];
-    if(cfg){ const s=selectedUnit.scale||1; selBox(selectedUnit.x, selectedUnit.y, cfg.fw*s, cfg.fh*s); }
+    if(cfg){ const s=selectedUnit.scale||1; selBox(selectedUnit.x, selectedUnit.y, cfg.fw*s, cfg.fh*s, 0.55); }
+  }
+  if(mainChar && tab==='units'){
+    // ★ 主控时把可通行区域画出来: 每组楼梯 = 一个大长方形, 上下两条平行对角线之间可走
+    ctx.save();
+    for(const st of stairs){
+      if(!layerVis[st.l]) continue;
+      const g0=stairGroupOf(st); if(!g0) continue;
+      if(g0.c0!==st.c || g0.r0!==st.r) continue;            // 每组只画一次
+      for(let yy=g0.r0*TS; yy<g0.r1*TS; yy+=2){
+        const RC=stairGroupRange(g0, yy); if(!RC) continue;
+        ctx.fillStyle='rgba(74,255,158,.28)';
+        ctx.fillRect(RC.xL, yy, Math.max(0,RC.xR-RC.xL), 2);
+      }
+      ctx.strokeStyle='rgba(140,255,200,.95)'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.rect(g0.c0*TS+1, g0.r0*TS+1, g0.W*TS-2, g0.N*TS-2); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  if(mainChar){
+    // 主控角色: 脚下加一个明显的标记圈
+    ctx.save();
+    ctx.strokeStyle='rgba(74,255,158,.95)'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.ellipse(mainChar.x, mainChar.y-2, 20, 9, 0, 0, 7); ctx.stroke();
+    ctx.strokeStyle='rgba(0,0,0,.45)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.ellipse(mainChar.x, mainChar.y-2, 24, 12, 0, 0, 7); ctx.stroke();
+    ctx.restore();
   }
   // 网格已移除(用户要求)
   let cnt=0; for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(layers[curLayer][r][c]) cnt++;
@@ -467,7 +631,10 @@ function toggle(r,c){
   }
   if(brush==='stairL'||brush==='stairR'){
     // 楼梯作为额外贴图: 存进 stairs(锚点上格), 不改 layers 地形; 一次两格(上格+下格)
-    stairs.push({ l:curLayer, r:r, c:c, dir: brush==='stairL'?3:4 }); draw(); return;
+    const sdir = brush==='stairL'?3:4;
+    const ex = stairs.find(s=> s.l===curLayer && s.r===r && s.c===c);
+    if(ex){ ex.dir=sdir; } else { stairs.push({ l:curLayer, r:r, c:c, dir:sdir }); }
+    draw(); return;
   }
   if(curLayer===0){
     layers[0][r][c] = brush==='water'?0 : 1;
@@ -511,14 +678,44 @@ function placeAt(px,py){
     if(landscapeBrush){ landscape.push({ l:curLayer, x:x, y:y, kind:landscapeBrush.kind, id:landscapeBrush.id, scale:landScale, faction:placeFaction, flip:1 }); }
     return;
   }
+  if(tab==='ui'){
+    let x=px, y=py;
+    if(landscapeMode==='geom'){ x=Math.floor(px/TS)*TS+TS/2; y=Math.floor(py/TS)*TS+TS/2; }
+    let li=-1, best=1e9;
+    for(let i=0;i<landscape.length;i++){ const s=landscape[i]; if(s.l!==curLayer||s.kind!=='ui') continue;
+      const d=Math.hypot(s.x-x, s.y-y); if(d<best){ best=d; li=i; } }
+    if(landBrush==='erase'){ if(li>=0 && best<TS*1.2){ landscape.splice(li,1); if(selectedLand===landscape[li]) selectedLand=null; } return; }
+    if(landBrush==='glove'){
+      selectedLand=(best<TS*1.5)? landscape[li] : null;
+      if(selectedLand){ uiW=selectedLand.w||uiW; uiH=selectedLand.h||uiH;
+        document.getElementById('uiW').value=uiW; document.getElementById('uiH').value=uiH;
+        document.getElementById('uiScale').value=selectedLand.scale||1; }
+      syncUiPanel(); updateNineBox(); draw(); return;
+    }
+    if(uiBrush!==null) landscape.push({ l:curLayer, x:x, y:y, kind:'ui', id:uiBrush, scale:uiScaleVal, flip:1, w:uiW, h:uiH });
+    return;
+  }
   const c=Math.floor(px/TS), r=Math.floor(py/TS); if(c<0||c>=COLS||r<0||r>=ROWS) return; toggle(r,c);
 }
-cv.addEventListener('mousedown',e=>{ e.preventDefault(); const p=ptrXY(e); painting=true; lastXY=p; placeAt(p.x,p.y); draw(); });
+cv.addEventListener('mousedown',e=>{
+  e.preventDefault();
+  const p=ptrXY(e); painting=true; lastXY=p;
+  // 记录撤销点(一次按下=一步)
+  if(tab==='terrain') pushUndo(brush==='erase'?'擦除':'绘制地形');
+  else if(gTool==='place') pushUndo(tab==='units'?'放置角色':(tab==='ui'?'放置 UI':'放置景观'));
+  else if(gTool==='erase') pushUndo('删除');
+  else glovePushed=false;                       // 手套: 真拖动时再记录
+  // UI 页双击 = 选中并打字, 不要连着放两个
+  const now=Date.now();
+  if(tab==='ui' && now-lastDownTs<350){ lastDownTs=now; painting=false; draw(); return; }
+  lastDownTs=now;
+  placeAt(p.x,p.y); draw();
+});
 cv.addEventListener('mousemove',e=>{
   const p=ptrXY(e);
   document.getElementById('cursor').textContent=Math.floor(p.x/TS)+','+Math.floor(p.y/TS);
   if(tab==='units'){
-    if(unitBrushTool==='glove' && selectedUnit && painting){ selectedUnit.x=p.x; selectedUnit.y=p.y; draw(); return; }
+    if(unitBrushTool==='glove' && selectedUnit && painting){ if(!glovePushed){ pushUndo('移动角色'); glovePushed=true; } selectedUnit.x=p.x; selectedUnit.y=p.y; draw(); return; }
     if(unitBrushTool==='erase' && painting){ placeAt(p.x,p.y); draw(); return; }   // 角色擦除: 按住拖动连续删
     if(unitBrushTool==='place' && landscapeMode==='free' && painting){
       let ui=-1,b=1e9; for(let i=0;i<units.length;i++){ const u=units[i]; if(u.l!==curLayer)continue; const d=Math.hypot(u.x-p.x,u.y-p.y); if(d<b){b=d;ui=i;} }
@@ -527,8 +724,13 @@ cv.addEventListener('mousemove',e=>{
     }
     return;
   }
+  if(tab==='ui'){
+    if(landBrush==='glove' && selectedLand && painting){ if(!glovePushed){ pushUndo('移动 UI'); glovePushed=true; } selectedLand.x=p.x; selectedLand.y=p.y; draw(); return; }
+    if(landBrush==='erase' && painting){ placeAt(p.x,p.y); draw(); return; }
+    return;
+  }
   if(tab==='landscape'){
-    if(landBrush==='glove' && selectedLand && painting){ selectedLand.x=p.x; selectedLand.y=p.y; draw(); return; }
+    if(landBrush==='glove' && selectedLand && painting){ if(!glovePushed){ pushUndo('移动景观'); glovePushed=true; } selectedLand.x=p.x; selectedLand.y=p.y; draw(); return; }
     if(landBrush==='erase' && painting){ placeAt(p.x,p.y); draw(); return; }
     if(landBrush==='place' && landscapeMode==='free' && painting){
       let li=-1,b=1e9; for(let i=0;i<landscape.length;i++){ const s=landscape[i]; if(s.l!==curLayer)continue; const d=Math.hypot(s.x-p.x,s.y-p.y); if(d<b){b=d;li=i;} }
@@ -541,6 +743,7 @@ cv.addEventListener('mousemove',e=>{
 });
 cv.addEventListener('mouseup',()=>{ // 手套选中保持(可继续改大小/颜色/翻转); 仅停止拖动
   painting=false;
+  if(selectedLand && selectedLand.kind==='ui') updateNineBox();
   if(selectedLand) document.getElementById('landScaleSel').value=selectedLand.scale||1;
   if(selectedUnit) document.getElementById('unitScale').value=selectedUnit.scale||1;
   draw(); });
@@ -550,11 +753,34 @@ cv.addEventListener('wheel',e=>{ if(tab==='landscape' && landBrush==='glove'){ e
   if(!sl){ const li=landscape.findIndex(s=> s.l===curLayer && Math.abs(s.x-p.x)<TS/2 && Math.abs(s.y-p.y)<TS/2); if(li>=0){ sl=landscape[li]; selectedLand=sl; } }
   if(sl){ const d=e.deltaY>0?-0.1:0.1; sl.scale=Math.max(0.2,Math.min(4,(sl.scale||1)+d)); document.getElementById('landScaleSel').value=sl.scale; draw(); }
 } },{passive:false});
-// 工具切换
-function setLandTool(t){ landBrush=t; if(t!=='glove') selectedLand=null; updateCursor(); document.getElementById('ltPlace').classList.toggle('on',t==='place'); document.getElementById('ltErase').classList.toggle('on',t==='erase'); document.getElementById('ltGlove').classList.toggle('on',t==='glove'); }
-document.getElementById('ltPlace').onclick=()=>setLandTool('place');
-document.getElementById('ltErase').onclick=()=>setLandTool('erase');
-document.getElementById('ltGlove').onclick=()=>setLandTool('glove');
+// ---------- 全局工具 / 摆放方式 (景观·角色·UI 通用) ----------
+function savePrefs(){ try{ localStorage.setItem('editor.prefs', JSON.stringify({gTool:gTool, gMode:gMode})); }catch(e){} }
+function loadPrefs(){
+  try{ const s=JSON.parse(localStorage.getItem('editor.prefs')||'{}');
+    if(s.gTool) gTool=s.gTool;
+    if(s.gMode) gMode=s.gMode;
+    landBrush=gTool; unitBrushTool=gTool; landscapeMode=(gMode==='grid')?'geom':'free';
+  }catch(e){}
+}
+function syncGlobalUI(){
+  const TN={place:'放置', glove:'手套', erase:'删除'}, MN={grid:'网格吸附', free:'自由摆放'};
+  for(const b of document.querySelectorAll('#gTools .tab')) b.classList.toggle('on', b.dataset.gt===gTool);
+  for(const b of document.querySelectorAll('#gModes .tab')) b.classList.toggle('on', b.dataset.gm===gMode);
+  const t=document.getElementById('curTool'), m=document.getElementById('curMode');
+  if(t) t.textContent=TN[gTool]||gTool;
+  if(m) m.textContent=MN[gMode]||gMode;
+}
+function setGTool(t){
+  gTool=t; landBrush=t; unitBrushTool=t; landscapeMode=(gMode==='grid')?'geom':'free';
+  if(t!=='glove'){ selectedLand=null; selectedUnit=null; }
+  updateCursor(); syncGlobalUI(); savePrefs(); renderLandList(); renderUnitList(); draw();
+}
+function setGMode(m){
+  gMode=m; landscapeMode=(m==='grid')?'geom':'free';
+  updateCursor(); syncGlobalUI(); savePrefs(); draw();
+}
+for(const b of document.querySelectorAll('#gTools .tab')) b.onclick=()=>setGTool(b.dataset.gt);
+for(const b of document.querySelectorAll('#gModes .tab')) b.onclick=()=>setGMode(b.dataset.gm);
 document.getElementById('landScaleSel').oninput=e=>{ const v=Math.max(0.2,Math.min(4,+e.target.value||1)); landScale=v; if(selectedLand){ selectedLand.scale=v; } draw(); };
 
 // 图层列表
@@ -562,13 +788,15 @@ function renderLayerList(){
   const list=document.getElementById('layerList'); list.innerHTML='';
   for(let l=0;l<NLAYER;l++){
     const row=document.createElement('div'); row.className='layer-row'+(l===curLayer?' on':'');
-    const sw=document.createElement('div'); sw.className='sw'; sw.style.background = LAYERDEF[l].color;
-    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=LAYERDEF[l].name+(l===curLayer?' (当前)':'');
+    // 用左侧颜色竖条表示层色(不再放色块, 免得看起来像第二个勾选框)
+    row.style.borderLeftColor = LAYERDEF[l].css || '#4e8f46';
+    const nm=document.createElement('div'); nm.className='nm'; nm.textContent=LAYERDEF[l].name;
+    row.title=(l===curLayer? '当前绘制层 · ':'')+'点击切换绘制层；右侧勾选框控制是否显示';
     const vis=document.createElement('div'); vis.className='vis';
     const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=layerVis[l];
     cb.addEventListener('click',e=>{ e.stopPropagation(); layerVis[l]=cb.checked; draw(); });
     vis.appendChild(cb);
-    row.appendChild(sw); row.appendChild(nm); row.appendChild(vis);
+    row.appendChild(nm); row.appendChild(vis);
     row.onclick=()=>{ curLayer=l; brush='grass'; document.getElementById('curLayer').textContent=LAYERDEF[l].name; renderLayerList(); renderBrushPanel(); draw(); };
     list.appendChild(row);
   }
@@ -588,38 +816,43 @@ function renderBrushPanel(){
 }
 renderBrushPanel();
 renderFactionPanel();
+loadPrefs();          // 恢复上次的工具/摆放方式(刷新不丢)
+syncGlobalUI();
 updateCursor();
 
 // ---------- 景观: tab 切换 + 面板 + 动画 ----------
 function switchTab(t){
   tab=t;
-  document.getElementById('tabTerrain').classList.toggle('on', t==='terrain');
-  document.getElementById('tabLandscape').classList.toggle('on', t==='landscape');
-  document.getElementById('tabUnits').classList.toggle('on', t==='units');
+  for(const [id,name] of [['tabTerrain','terrain'],['tabLandscape','landscape'],['tabUnits','units'],['tabUi','ui']])
+    document.getElementById(id).classList.toggle('on', t===name);
   document.getElementById('landPanel').style.display = t==='landscape' ? '' : 'none';
   document.getElementById('unitPanel').style.display = t==='units' ? '' : 'none';
+  document.getElementById('uiPanel').style.display  = t==='ui' ? '' : 'none';
+  document.getElementById('globalTools').style.display = t==='terrain' ? 'none' : '';
   const brushGroup=document.getElementById('brushTitle').closest('.group');
   if(brushGroup) brushGroup.style.display = t==='terrain' ? '' : 'none';
   if(t==='landscape') renderLandList();
   if(t==='units') renderUnitList();
+  if(t==='ui') renderUiList();
+  syncGlobalUI();
   updateCursor();
 }
 document.getElementById('tabTerrain').onclick=()=>switchTab('terrain');
 document.getElementById('tabLandscape').onclick=()=>switchTab('landscape');
 document.getElementById('tabUnits').onclick=()=>switchTab('units');
-function setLandMode(m){ landscapeMode=m; document.getElementById('modeGeom').classList.toggle('on',m==='geom'); document.getElementById('modeFree').classList.toggle('on',m==='free'); }
-document.getElementById('modeGeom').onclick=()=>setLandMode('geom');
-document.getElementById('modeFree').onclick=()=>setLandMode('free');
+document.getElementById('tabUi').onclick=()=>switchTab('ui');
+function setLandMode(m){ setGMode(m==='geom'?'grid':'free'); }
 // ---------- 角色: 列表 + 工具 ----------
-let unitBrushTool='place'; // place|erase|glove
-let selectedUnit=null;
+let selectedUnit=null;   // (unitBrushTool 已在全局工具区声明)
 function renderFactionPanel(){
   const box=document.getElementById('factionBtns'); if(!box) return;
   box.innerHTML='';
   for(const [id,label,color] of FACTION_LIST){
     const b=document.createElement('button'); b.className='fac-btn'+(placeFaction===id?' on':'');
     b.innerHTML='<span class="fac-dot" style="background:'+color+'"></span>'+label;
-    b.onclick=()=>{ placeFaction=id;
+    b.onclick=()=>{ 
+      if((selectedUnit)||(selectedLand && selectedLand.kind==='building')) pushUndo('改阵营');
+      placeFaction=id;
       if(selectedUnit) selectedUnit.faction=id;         // 改选中角色阵营
       if(selectedLand && selectedLand.kind==='building') selectedLand.faction=id;  // 改选中建筑阵营
       renderFactionPanel(); renderUnitList(); renderLandList(); draw(); };
@@ -642,12 +875,11 @@ function renderUnitList(){
     box.appendChild(it);
   }
 }
-function setUnitTool(t){ unitBrushTool=t; if(t!=='glove') selectedUnit=null; updateCursor(); document.getElementById('utPlace').classList.toggle('on',t==='place'); document.getElementById('utErase').classList.toggle('on',t==='erase'); document.getElementById('utGlove').classList.toggle('on',t==='glove'); }
-document.getElementById('landFlipBtn').onclick=()=>{ if(selectedLand){ selectedLand.flip=(selectedLand.flip||1)*-1; draw(); } else { alert('请先用手套选中一个建筑/景观'); } };
-document.getElementById('unitFlipBtn').onclick=()=>{ if(selectedUnit){ selectedUnit.flip=(selectedUnit.flip||1)*-1; draw(); } else { alert('请先用手套选中一个角色'); } };
-document.getElementById('utPlace').onclick=()=>setUnitTool('place');
-document.getElementById('utErase').onclick=()=>setUnitTool('erase');
-document.getElementById('utGlove').onclick=()=>setUnitTool('glove');
+function setUnitTool(t){ setGTool(t); }
+document.getElementById('landFlipBtn').onclick=()=>{ if(selectedLand){ pushUndo('左右翻转'); selectedLand.flip=(selectedLand.flip||1)*-1; draw(); } else { alert('请先用手套选中一个建筑/景观'); } };
+document.getElementById('unitFlipBtn').onclick=()=>{ if(selectedUnit){ pushUndo('左右翻转'); selectedUnit.flip=(selectedUnit.flip||1)*-1; draw(); } else { alert('请先用手套选中一个角色'); } };
+
+document.getElementById('unitScale').addEventListener('focus',()=>{ if(selectedUnit) pushUndo('改角色大小'); });
 document.getElementById('unitScale').oninput=e=>{ const v=Math.max(0.3,Math.min(4,+e.target.value||1)); unitScaleVal=v; if(selectedUnit){ selectedUnit.scale=v; } draw(); };
 
 document.getElementById('landScale').oninput=document.getElementById('landScale').oninput=e=>{ landScale=Math.max(0.2,Math.min(4,+e.target.value||1)); };
@@ -674,14 +906,628 @@ function renderLandList(){
     }
   }
 }
+
+// ============================================================
+//  UI 素材: 单图 + 碎片类(九宫格)自动拼接
+//  思路同瓦片自动连接: 先"分片"(扫描内容段) -> 再按位置"编码"取片
+// ============================================================
+let uiBrush=null;                 // 当前选中的 UI 素材下标
+let uiScaleVal=1, uiW=320, uiH=64; // 新放置的尺寸
+const uiImgs=[], uiMeta=[];        // 与 UI_ASSETS 同序
+// 扫描一条轴上的"内容段"(连续有像素的区间) => 拼片位置
+function scanRuns(im, axis){
+  const c=document.createElement('canvas'); c.width=im.width; c.height=im.height;
+  const cc=c.getContext('2d'); cc.drawImage(im,0,0);
+  let d; try{ d=cc.getImageData(0,0,im.width,im.height).data; }catch(e){ return null; }
+  const n=(axis==='x'?im.width:im.height), m=(axis==='x'?im.height:im.width);
+  const has=[];
+  for(let i=0;i<n;i++){ let any=false;
+    for(let j=0;j<m;j+=2){ const x=(axis==='x'?i:j), y=(axis==='x'?j:i);
+      if(d[(y*im.width+x)*4+3]>16){ any=true; break; } }
+    has.push(any); }
+  const out=[]; let st=-1;
+  for(let i=0;i<n;i++){ if(has[i]&&st<0) st=i; else if(!has[i]&&st>=0){ out.push([st,i-1]); st=-1; } }
+  if(st>=0) out.push([st,n-1]);
+  return out;
+}
+// 自动识别拼片结构: 3×3=九宫格 / 3×1=横向三格(血条) / 3×N=上下角+可重复中段(丝带) / 其它=单图
+function detectNine(im){
+  const rx=scanRuns(im,'x'), ry=scanRuns(im,'y');
+  const pack=(runs)=>runs.map(r=>[r[0], r[1]-r[0]+1]);   // [起点, 长度]
+  if(!rx||!ry||rx.length!==3) return { mode:'single', natW:im.width, natH:im.height };
+  const px=pack(rx), py=pack(ry);
+  if(ry.length===1) return { mode:'hbar', natW:im.width, natH:im.height,
+    x:px.map(v=>v[0]), w:px.map(v=>v[1]), y:[0,0,0], h:[im.height,im.height,im.height] };
+  if(ry.length>=3) return { mode:'nine', natW:im.width, natH:im.height,
+    x:px.map(v=>v[0]), w:px.map(v=>v[1]),
+    y:[py[0][0], py[1][0], py[py.length-1][0]],
+    h:[py[0][1], py[1][1], py[py.length-1][1]] };
+  return { mode:'single', natW:im.width, natH:im.height };
+}
+// 单块绘制: 目标位置取整(像素对齐)
+function blitPx(im, sx,sy,sw,sh, dx,dy,dw,dh){
+  if(dw<=0||dh<=0||sw<=0||sh<=0) return;
+  ctx.drawImage(im, sx,sy,sw,sh, Math.round(dx), Math.round(dy), Math.max(1,Math.round(dw)), Math.max(1,Math.round(dh)));
+}
+// 横向平铺(整数步进, 最后一块按剩余宽度裁源图)
+function tileH(im, sx,sy,sw,sh, dx,dy,dw,dh){
+  if(dw<=0||dh<=0) return;
+  for(let x=0;x<dw;x+=sw){ const cw=Math.min(sw,dw-x); blitPx(im, sx,sy,cw,sh, dx+x,dy,cw,dh); }
+}
+// 纵向平铺
+function tileV(im, sx,sy,sw,sh, dx,dy,dw,dh){
+  if(dw<=0||dh<=0) return;
+  for(let y=0;y<dh;y+=sh){ const ch=Math.min(sh,dh-y); blitPx(im, sx,sy,sw,ch, dx,dy+y,dw,ch); }
+}
+// 双向平铺
+function tileB(im, sx,sy,sw,sh, dx,dy,dw,dh){
+  if(dw<=0||dh<=0) return;
+  for(let y=0;y<dh;y+=sh) for(let x=0;x<dw;x+=sw){
+    const cw=Math.min(sw,dw-x), ch=Math.min(sh,dh-y);
+    blitPx(im, sx,sy,cw,ch, dx+x,dy+y,cw,ch);
+  }
+}
+// 九宫格拼装: 角固定 / 边单向平铺 / 中心双向平铺
+// ★ 关键: 四条边界只算一次(整数), 所有拼片共用同一组边界
+//    => 不会出现"每块各自取整 ⇒ 差 1px ⇒ 半透明缝"的问题
+function drawNine(im, meta, dx,dy,dw,dh, mode){
+  if(meta.mode==='single'){ blitPx(im,0,0,im.width,im.height, dx,dy,dw,dh); return; }
+  const [x0,x1,x2]=meta.x, [w0,w1,w2]=meta.w;
+  const [y0,y1,y2]=meta.y, [h0,h1,h2]=meta.h;
+  const X=Math.round(dx), Y=Math.round(dy), R=Math.round(dx+dw), B=Math.round(dy+dh);
+  const bx=[X, Math.min(X+Math.round(w0), R), Math.max(X, R-Math.round(w2)), R];
+  const by=[Y, Math.min(Y+Math.round(h0), B), Math.max(Y, B-Math.round(h2)), B];
+  const cwA=bx[1]-bx[0], cwB=bx[3]-bx[2], chA=by[1]-by[0], chB=by[3]-by[2];
+  const mW=Math.max(0,bx[2]-bx[1]), mH=Math.max(0,by[2]-by[1]);
+  blitPx(im, x0,y0,w0,h0, bx[0],by[0], cwA, chA);                          // 左上
+  blitPx(im, x2,y0,w2,h0, bx[2],by[0], cwB, chA);                          // 右上
+  if(mode!=='hbar'){
+    blitPx(im, x0,y2,w0,h2, bx[0],by[2], cwA, chB);                        // 左下
+    blitPx(im, x2,y2,w2,h2, bx[2],by[2], cwB, chB);                        // 右下
+    tileV(im, x0,y1,w0,h1, bx[0],by[1], cwA, mH);                          // 左边
+    tileV(im, x2,y1,w2,h1, bx[2],by[1], cwB, mH);                          // 右边
+  }
+  tileH(im, x1,y0,w1,h0, bx[1],by[0], mW, chA);                            // 上边
+  if(mode!=='hbar'){
+    tileH(im, x1,y2,w1,h2, bx[1],by[2], mW, chB);                          // 下边
+    tileB(im, x1,y1,w1,h1, bx[1],by[1], mW, mH);                           // 中心
+  }
+}
+// 单条 UI 的绘制(landscape 循环里调用)
+function drawUiItem(it){
+  const im=uiImgs[it.id], meta=uiMeta[it.id];
+  if(!im||!meta) return;
+  const s=it.scale||1;
+  const w=(it.w||meta.natW)*s, h=(it.h||meta.natH)*s;
+  const x=it.x-w/2, y=it.y-h/2;
+  ctx.save();
+  if((it.flip||1)<0){ ctx.translate(it.x,0); ctx.scale(-1,1); ctx.translate(-it.x,0); }
+  drawNine(im, meta, x,y,w,h, meta.mode);
+  ctx.restore();
+  if(it.text) drawPixelText(it.text, it.x, it.y, (it.textSize||16)*s, it.textColor||'#3b2a17', it.textFont||0);
+}
+// ---- UI 素材列表 ----
+function renderUiList(){
+  const box=document.getElementById('uiList'); if(!box) return;
+  box.innerHTML='';
+  const byCat={};
+  UI_ASSETS.forEach((a,i)=>{ (byCat[a.cat]=byCat[a.cat]||[]).push(i); });
+  for(const cat of Object.keys(byCat)){
+    const h=document.createElement('div'); h.className='ui-sub';
+    h.textContent=(UI_CAT_LABEL[cat]||cat)+'  ·  '+byCat[cat].length+' 个';
+    box.appendChild(h);
+    const wrap=document.createElement('div'); wrap.id='ui_'+cat;
+    wrap.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px';
+    for(const i of byCat[cat]){
+      const a=UI_ASSETS[i], meta=uiMeta[i];
+      const it=document.createElement('div');
+      it.className='land-item'+(uiBrush===i?' on':'');
+      it.title=a.id+(meta?('  '+a.w+'×'+a.h+(meta.mode==='single'?'  单图':'  碎片('+meta.mode+')')):'');
+      const c=document.createElement('canvas'); c.width=60; c.height=40; const cc=c.getContext('2d'); cc.imageSmoothingEnabled=false;
+      const im=uiImgs[i];
+      if(im){ const sd=Math.min(56/a.w, 34/a.h); cc.drawImage(im, (60-a.w*sd)/2, (40-a.h*sd)/2, a.w*sd, a.h*sd); }
+      it.appendChild(c);
+      if(meta && meta.mode!=='single'){ const tag=document.createElement('div'); tag.className='nine-tag'; tag.textContent='拼'; it.appendChild(tag); }
+      const nm=document.createElement('div'); nm.className='nm'; nm.textContent=a.id.replace(/_/g,' ').slice(0,12);
+      it.appendChild(nm);
+      it.onclick=()=>{ uiBrush=i; uiW=a.w; uiH=a.h; document.getElementById('uiW').value=a.w; document.getElementById('uiH').value=a.h; renderUiList(); updateNineBox(); };
+      wrap.appendChild(it);
+    }
+    box.appendChild(wrap);
+  }
+}
+// ---- 自动链接编码可视化: 每一格用哪个拼片 ----
+function renderNineCode(){
+  const cv2=document.getElementById('nineCode'); if(!cv2) return;
+  const g=cv2.getContext('2d'); g.imageSmoothingEnabled=false;
+  const sel=(uiBrush!==null && landscape_UIselected()) ? landscape_UIselected() : null;
+  const meta=(uiBrush!==null)? uiMeta[uiBrush] : null;
+  g.clearRect(0,0,cv2.width,cv2.height);
+  if(!meta || meta.mode==='single'){
+    g.fillStyle='#6c7684'; g.font='12px system-ui';
+    g.fillText('（该项是单图，不需要拼接）', 12, 24); return;
+  }
+  const w=uiW, h=uiH;
+  const cols=Math.max(3, Math.min(9, Math.round(w/Math.max(8,(meta.x[1]||64))))), rows=(meta.mode==='hbar')?1:Math.max(3, Math.min(9, Math.round(h/Math.max(8,(meta.y[1]||64)))));
+  const cw=cv2.width/cols, ch=cv2.height/rows;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    let code='C';
+    if(meta.mode==='hbar'){ code = c===0?'L':(c===cols-1?'R':'C'); }
+    else {
+      const top=r===0, bot=r===rows-1, lef=c===0, rig=c===cols-1;
+      code = top&&lef?'TL': top&&rig?'TR': bot&&lef?'BL': bot&&rig?'BR':
+             top?'T': bot?'B': lef?'L': rig?'R':'C';
+    }
+    const hot=(code==='TL'||code==='TR'||code==='BL'||code==='BR');
+    g.fillStyle = hot? 'rgba(245,185,66,.22)' : (code==='C'?'rgba(127,215,255,.12)':'rgba(255,255,255,.05)');
+    g.fillRect(c*cw+1, r*ch+1, cw-2, ch-2);
+    g.strokeStyle='rgba(255,255,255,.14)'; g.lineWidth=1; g.strokeRect(c*cw+1.5, r*ch+1.5, cw-3, ch-3);
+    g.fillStyle=hot?'#f5b942':(code==='C'?'#7fd7ff':'#9aa0ab');
+    g.font='bold '+Math.min(12,cw*0.28)+'px system-ui'; g.textAlign='center';
+    g.fillText(code, c*cw+cw/2, r*ch+ch/2+4);
+  }
+  g.textAlign='start';
+}
+function updateNineBox(){
+  const box=document.getElementById('nineBox'); if(!box) return;
+  const meta=(uiBrush!==null)? uiMeta[uiBrush] : null;
+  const info=document.getElementById('nineInfo');
+  if(!meta || meta.mode==='single'){ box.style.display='none'; return; }
+  box.style.display='';
+  const a=UI_ASSETS[uiBrush];
+  info.innerHTML='<b style="color:#e8ebf0">'+a.id+'</b> · '+meta.mode+
+    '<br>角片 '+meta.w[0]+'×'+meta.h[0]+'　边片 '+meta.w[1]+'×'+meta.h[1]+
+    '<br>边/中心按拼片尺寸自动重复平铺';
+  renderNineCode();
+}
+function landscape_UIselected(){ return (selectedLand && selectedLand.kind==='ui')? selectedLand : null; }
+
+
+// ============================================================
+//  主控角色: 键盘试玩 (WASD 移动 / J 攻击 / 农夫 123 换工具)
+// ============================================================
+// 编辑器用到的动画(帧数/落脚补偿都由我实测得到)
+const UANIM={
+  pawn:{ fw:192, fh:192, label:'步兵/农夫',
+    idle:{f:'pawn_idle', n:8, fps:6, foot:57},
+    run :{f:'pawn_run',  n:6, fps:10, foot:57},
+    tools:[ {key:'axe',     name:'斧头(砍树)', act:{f:'pawn_interact_axe',     n:6, fps:8, foot:57}},
+            {key:'pickaxe', name:'镐子(挖矿)', act:{f:'pawn_interact_pickaxe', n:6, fps:8, foot:57}},
+            {key:'knife',   name:'小刀(杀羊)', act:{f:'pawn_interact_knife',   n:4, fps:8, foot:57}} ] },
+  warrior:{ fw:192, fh:192, label:'武士', H:72,
+    idle:{f:'warrior_idle', n:8, fps:6, foot:55},
+    run :{f:'warrior_run',  n:6, fps:10, foot:55},
+    // 挥砍会把刀光甩到脚下 => 逐帧身体锚点(两套攻击交替播放)
+    attack:{f:'warrior_attack1', n:4, fps:10, foot:55, bodyTops:[53,52,65,72]},
+    attack2:{f:'warrior_attack2', n:4, fps:10, foot:55, bodyTops:[68,65,59,56]} },
+  lancer:{ fw:320, fh:320, label:'枪兵',
+    idle:{f:'lancer_idle', n:12, fps:8, foot:122},
+    run :{f:'lancer_run',  n:6, fps:10, foot:122},
+    // ★ 四个方向的攻击帧(完整包里才有) —— 左右靠翻转覆盖 8 向
+    // 完整包里的 5 个方向攻击帧(左/左上/左下 靠左右翻转覆盖 => 8 向齐全)
+    // bodyTops + H: 逐帧"身体顶部"实测值 —— 武器伸出/收回时按身体对齐, 避免人物漂移
+    H:74,
+    dirs:{ right:{f:'lancer_right_attack', n:3, fps:10, foot:122},
+           upright:{f:'lancer_upright_attack', n:3, fps:10, foot:126},
+           up:{f:'lancer_up_attack', n:3, fps:10, foot:131, bodyTops:[115,117,125]},
+           downright:{f:'lancer_downright_attack', n:3, fps:10, foot:46, bodyTops:[142,142,134]},
+           down:{f:'lancer_down_attack', n:3, fps:10, foot:18, bodyTops:[153,151,139]} } },
+  archer:{ fw:192, fh:192, label:'弓箭手',
+    idle:{f:'archer_idle', n:6, fps:6, foot:56},
+    run :{f:'archer_run',  n:4, fps:10, foot:56},
+    attack:{f:'archer_shoot', n:8, fps:10, foot:56} },
+  monk:{ fw:192, fh:192, label:'僧侣',
+    idle:{f:'monk_idle', n:6, fps:6, foot:58},
+    run :{f:'monk_run',  n:4, fps:10, foot:58},
+    attack:{f:'monk_heal', n:11, fps:10, foot:58} },
+};
+const animCache={};
+function animImg(faction, file){
+  const key=faction+'|'+file;
+  const c=animCache[key];
+  if(c && c.img) return c.img;
+  if(c) return null;                       // 加载中或失败
+  animCache[key]={};
+  img('assets/units/'+faction+'/anim/'+file+'.png')
+    .then(im=>{ animCache[key]={img:im}; })
+    .catch(()=>{ animCache[key]={fail:1}; });
+  return null;
+}
+// ============================================================
+//  主控角色的碰撞(照搬 demo 的通行规则)
+//  可走: 草地/唇草(值1) + 楼梯格;  不可走: 水(0)/悬崖(2)/空/建筑占格
+//  上方任意层有地形(唇草或悬崖) => 该格下层不可站(不能走进山体里)
+// ============================================================
+function isStairCellEd(l,r,c){
+  return stairs.some(s=> s.l===l && s.c===c && (s.r===r || s.r+1===r));
+}
+// ★ 楼梯坡道: 两格里只有"坡道那条"能走(用户要求)
+//   实测图集: dir=3(左坡) 上格斜边从右(63)到左(4) => 坡道高端在右
+//             dir=4(右坡) 上格斜边从左(0)到右(56) => 坡道高端在左
+//   坡道 = 从"下格底部格心"斜到"上格顶部的高端", 带宽 ±ROAD_HW
+// ★ 可走范围(用户规则): 楼梯是 1宽×2高 的长方形, 切成上下两个正方形,
+//   每个正方形画一条【平行的对角线】, 两条对角线【之间】的面积就是可行走范围。
+//   => 平行四边形 (0,0)→(1,1)→(1,2)→(0,1)
+//   坐标: x 0~1 = 一格宽, y 0~2 = 两格高; dir=4 用原样, dir=3 横向镜像
+// ★★ 最终规则(用户): 把【重叠或相接】的楼梯先合并成一组, 整组看成一个"大长方形"
+//    (宽 W 格 × 高 N 格), 在它【最上面】和【最下面】各画一条平行对角线,
+//    两条对角线【之间】的区域就是可通行区域。
+//    · 单条楼梯(W=1,N=2) 正好退化成原来的平行四边形 ✓
+//    · 用户是"从上往下一格格点"放的 => 会产生多个重叠矩形, 必须先合并 ✓
+const STAIR_EPS=4;                          // 边界容差(px)
+function stairBoxOf(st){ return [st.c, st.r, st.c+1, st.r+2]; }
+function stairBoxHit(a,b){ return !(a[2]<b[0] || b[2]<a[0] || a[3]<b[1] || b[3]<a[1]); }  // 相交或边界相接
+// (c,r) 所在格的楼梯所归属的整组(传递合并)
+function stairGroupAt(c,r){
+  const seed=stairs.find(s=> s.c===c && (s.r===r || s.r+1===r));
+  if(!seed) return null;
+  const inG=[seed];
+  let bb=stairBoxOf(seed), changed=true;
+  while(changed){
+    changed=false;
+    for(const s of stairs){
+      if(s.l!==seed.l || inG.indexOf(s)>=0) continue;
+      if(stairBoxHit(bb, stairBoxOf(s))){
+        inG.push(s);
+        const b=stairBoxOf(s);
+        bb=[Math.min(bb[0],b[0]), Math.min(bb[1],b[1]), Math.max(bb[2],b[2]), Math.max(bb[3],b[3])];
+        changed=true;
+      }
+    }
+  }
+  return { c0:bb[0], r0:bb[1], c1:bb[2], r1:bb[3], W:bb[2]-bb[0], N:bb[3]-bb[1], dir:seed.dir, l:seed.l, n:inG.length };
+}
+function stairGroupOf(st){ return st.c==null? null : stairGroupAt(st.c, st.r); }
+// 组内高度 y 处的可通行 x 范围(上下两条对角线之间)
+function stairGroupRange(g, y){
+  if(!g) return null;
+  const fy=(y-g.r0*TS)/TS;
+  if(fy<-0.05 || fy>g.N+0.05) return null;
+  let xL, xR;
+  if(g.dir===4){ xR=Math.min(g.W, fy);      xL=Math.max(0, fy-(g.N-1)); }        // 右坡
+  else         { xL=Math.max(0, g.W-fy);    xR=Math.min(g.W, g.W-(fy-(g.N-1))); } // 左坡镜像
+  if(xL>xR){ const t=xL; xL=xR; xR=t; }
+  return { xL: g.c0*TS + xL*TS, xR: g.c0*TS + xR*TS };
+}
+function stairRoadAt(st, x, y, eps){
+  const R=stairGroupRange(stairGroupOf(st), y);
+  if(!R) return { cx: st.c*TS+TS/2, ok:false };
+  const e=eps||0;
+  return { cx:(R.xL+R.xR)/2, ok:(x>=R.xL-e && x<=R.xR+e), xL:R.xL, xR:R.xR };
+}
+function stairRoadOk(st, x, y, eps){ return stairRoadAt(st,x,y,eps).ok; }
+// 是否与别的楼梯合并成一组(用于移动时是否做"向路中心柔靠")
+function stairHasNeighbor(st){ const g=stairGroupOf(st); return !!(g && g.n>1); }
+// ★ 建筑占格(单位=格, 不是精灵包围盒) —— 与 demo 游戏里的 CFG.size 保持一致
+//   用精灵包围盒会把塔尖/屋檐这些虚的地方也算成墙, 太大; 这里只占"地面那一块"
+//   0城堡 1民房1 2民房2 3民房3 4修道院 5兵营 6箭楼 7塔  (锚点=底部中心, 与渲染一致)
+const BLD_FOOT=[[5,4],[2,3],[2,3],[2,3],[3,4],[3,3],[3,3],[2,3]];
+function buildingFootprint(it){
+  const f=BLD_FOOT[(it.id||0)%BLD_FOOT.length];
+  const s=it.scale||1;
+  return { w:f[0]*TS*s, h:f[1]*TS*s };
+}
+function buildingBlocked(l,r,c){
+  for(const it of landscape){
+    if(it.kind!=='building' || (it.l||0)!==l) continue;
+    const F2=buildingFootprint(it);
+    const c0=Math.floor((it.x-F2.w/2)/TS), c1=Math.floor((it.x+F2.w/2-1)/TS);
+    const r0=Math.floor((it.y-F2.h)/TS), r1=Math.floor((it.y-1)/TS);
+    if(r>=r0 && r<=r1 && c>=c0 && c<=c1) return true;
+  }
+  return false;
+}
+// 该格主控角色应该站在哪层(-1 = 完全不可站)
+function mcGroundLayer(r,c){
+  for(let l=NLAYER-1;l>=1;l--) if(isStairCellEd(l,r,c)) return l;   // 楼梯优先(便于上下楼)
+  for(let l=NLAYER-1;l>=0;l--){ const v=(layers[l][r]||[])[c]; if(v===1) return l; }
+  return -1;
+}
+function mcCanStand(x,y,curL){
+  const c=Math.floor(x/TS), r=Math.floor(y/TS);
+  if(r<0||r>=ROWS||c<0||c>=COLS) return false;
+  // ★ 楼梯格: 唯一允许上下层的地方(只有画出的可走范围内能站)
+  for(const st of stairs){
+    if(!layerVis[st.l] || st.c!==c) continue;
+    if(r!==st.r && r!==st.r+1) continue;
+    // ★ 始终受平行四边形限制(这是基础); 相接的两条靠 STAIR_EPS 在接点处连通
+    return stairRoadOk(st, x, y, STAIR_EPS);
+  }
+  const l=mcGroundLayer(r,c);
+  if(l<0) return false;                                  // 该格没有草地/唇草 => 不能走
+  // ★ 非楼梯处【不能换层】: 目标格的草地层必须和角色当前层一致
+  //   (所以高处只能通过楼梯上去, 走到崖边不会自动浮上去)
+  if(curL!==undefined && curL!==null && l!==curL) return false;
+  for(let l2=l+1;l2<NLAYER;l2++){ const v=(layers[l2][r]||[])[c]; if(v===1||v===2) return false; }
+  if(buildingBlocked(l,r,c)) return false;
+  return true;
+}
+let glovePushed=false;
+let mainChar=null;        // 主控角色(units 里的对象)
+let mcTool=0;             // 农夫工具下标
+let mcDir={x:1,y:0};      // 最后朝向(决定攻击用哪个方向的帧)
+const KEYS={};
+const MC_SPEED=230;       // px/s
+// 任意角色当前该播哪套动画(主控角色会跑/攻击, 其它角色只有待机)
+function unitAnimOf(u){
+  const U=UANIM[u.role]; if(!U) return null;
+  const a=u.anim||'idle';
+  if(a==='attack'){
+    if(u.role==='pawn') return U.tools[u.mcTool||0].act;
+    if(u.role==='warrior' && u.mcAtkAlt && U.attack2) return U.attack2;
+    if(u.role==='lancer'){
+      const d=u.mcDir||{x:1,y:0};
+      let k;
+      if(d.y<-0.9) k='up';                 // 正上
+      else if(d.y<-0.35) k='upright';      // 斜上
+      else if(d.y>0.9) k='down';           // 正下
+      else if(d.y>0.35) k='downright';     // 斜下
+      else k='right';                      // 水平(左靠翻转)
+      return U.dirs[k];
+    }
+    return U.attack;
+  }
+  return U[a]||U.idle;
+}
+function setMainChar(u){
+  mainChar=u||null;
+  if(mainChar){
+    // ★ 选中时把层对齐到脚下(存档里层不匹配的话会动不了)
+    const c0=Math.floor(mainChar.x/TS), r0=Math.floor(mainChar.y/TS);
+    let fixed=false;
+    for(const st of stairs){
+      if(st.c!==c0 || (r0!==st.r && r0!==st.r+1)) continue;
+      if(stairRoadOk(st, mainChar.x, mainChar.y)){
+        const g0=stairGroupOf(st);
+        const fy=(mainChar.y-g0.r0*TS)/TS;
+        mainChar.l=(fy > g0.N-1 ? g0.l-1 : g0.l); fixed=true;
+      }
+      break;
+    }
+    if(!fixed){ const gl=mcGroundLayer(r0,c0); if(gl>=0) mainChar.l=gl; }
+  }
+  const btn=document.getElementById('mainCharClear');
+  const bar=document.getElementById('mainCharBar');
+  const toolBox=document.getElementById('mainCharTool');
+  if(btn) btn.style.display = mainChar? '' : 'none';
+  if(bar) bar.innerHTML = mainChar
+    ? ('当前主控: <b style="color:#4aff9e">'+(UANIM[mainChar.role]?UANIM[mainChar.role].label:mainChar.role)+'</b> · 位置 '+Math.round(mainChar.x)+','+Math.round(mainChar.y))
+    : '（还没有主控角色：用手套点一个角色，再点下面的按钮）';
+  if(toolBox) toolBox.style.display = (mainChar&&mainChar.role==='pawn')? 'flex' : 'none';
+  renderMcTools();
+}
+function renderMcTools(){
+  const box=document.getElementById('mainCharTool'); if(!box) return;
+  box.innerHTML='';
+  if(!mainChar||mainChar.role!=='pawn') return;
+  UANIM.pawn.tools.forEach((t,i)=>{
+    const b=document.createElement('button'); b.className='tab'+(mcTool===i?' on':''); b.textContent=(i+1)+'. '+t.name;
+    b.onclick=()=>{ mcTool=i; renderMcTools(); };
+    box.appendChild(b);
+  });
+}
+function mcAttack(){
+  if(!mainChar) return;
+  if(mainChar.role==='warrior') mainChar.mcAtkAlt=!mainChar.mcAtkAlt;   // 挥砍1/2 交替
+  const cfg=mcAnimCfgAttackDur();
+  mainChar.anim='attack'; mainChar.animT=0; mainChar.atkT=cfg;
+}
+function mcAnimCfgAttackDur(){
+  const c=unitAnimOf(mainChar);
+  return c? c.n/c.fps : 0.4;   // 正好播完一遍攻击动画
+}
+addEventListener('keydown',e=>{
+  const tag=(e.target&&e.target.tagName)||'';
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;   // 在输入框里打字时不操控角色
+  const k=e.key.toLowerCase();
+  KEYS[k]=true;
+  if(tab!=='units'||!mainChar) return;
+  if(k==='j'){ e.preventDefault(); mcAttack(); }
+  if(mainChar.role==='pawn'){
+    const n=parseInt(k,10);
+    if(n>=1 && n<=UANIM.pawn.tools.length){ mcTool=n-1; mainChar.mcTool=mcTool; renderMcTools(); }
+  }
+});
+addEventListener('keyup',e=>{ KEYS[e.key.toLowerCase()]=false; });
+function updateMainChar(dt){
+  if(!mainChar) return;
+  if(tab!=='units'){ // 不在角色页就暂停操控(动画继续)
+    if(mainChar.atkT>0){ mainChar.atkT-=dt; if(mainChar.atkT<=0) mainChar.anim='idle'; }
+    return; }
+  const u=mainChar;
+  u.animT=(u.animT||0)+dt;
+  if(u.atkT>0){ u.atkT-=dt; if(u.atkT<=0 && u.anim==='attack') u.anim='idle'; }
+  let dx=0, dy=0;
+  if(KEYS['a']||KEYS['arrowleft'])  dx-=1;
+  if(KEYS['d']||KEYS['arrowright']) dx+=1;
+  if(KEYS['w']||KEYS['arrowup'])    dy-=1;
+  if(KEYS['s']||KEYS['arrowdown'])  dy+=1;
+  if(dx||dy){
+    const L=Math.hypot(dx,dy); dx/=L; dy/=L;
+    mcDir={x:dx,y:dy}; u.mcDir=mcDir;
+    const sp=MC_SPEED*dt/(mainChar.scale||1);
+    // ★ 碰撞: 分轴尝试(可沿墙滑动), 撞到水/悬崖/建筑就停住
+    const nx=u.x+dx*sp, ny=u.y+dy*sp;
+    if(mcCanStand(nx, u.y, u.l)) u.x=nx;
+    if(mcCanStand(u.x, ny, u.l)) u.y=ny;
+    else if(dy){
+      // ★ 楼梯上按上下被对角线挡住时: 把 x 收到"目标高度"的可走范围内再走
+      //   (否则按住 W 会顶在斜边上不动)
+      const cS=Math.floor(u.x/TS), rS=Math.floor(ny/TS);
+      for(const st2 of stairs){
+        if(st2.c!==cS || (rS!==st2.r && rS!==st2.r+1)) continue;
+        const R2=stairGroupRange(stairGroupOf(st2), ny);
+        if(R2){
+          const tx=Math.max(R2.xL+0.5, Math.min(R2.xR-0.5, u.x));
+          // ★ 只有"角色本来就在坡道上"才允许这种小幅横移修正(沿坡道走顺);
+          //   不在坡道上时不许靠横移进入(否则相接不上的楼梯会被横跳过去 ✗)
+          const onStairNow = stairs.some(s2=> stairRoadOk(s2, u.x, u.y, STAIR_EPS));
+          if(onStairNow && Math.abs(tx-u.x)<=20 && mcCanStand(tx, ny, u.l)){ u.x=tx; u.y=ny; }
+        }
+        break;
+      }
+    }
+    if(dx) u.flip = dx<0? -1 : 1;
+    if(u.anim!=='attack'){ u.anim='run'; }
+  } else if(u.anim==='run'){ u.anim='idle'; }
+  // ★ 楼梯吸附 + 换层(楼梯是唯一能上下层的地方)
+  const gc=Math.floor(u.x/TS), gr=Math.floor(u.y/TS);
+  let onStair=false;
+  for(const st of stairs){
+    if(st.c!==gc || (gr!==st.r && gr!==st.r+1)) continue;
+    const R=stairGroupRange(stairGroupOf(st), u.y);
+    if(R){
+      // 夹进平行四边形(带容差) —— 限制区域始终是平行四边形
+      if(u.x<R.xL-STAIR_EPS) u.x=R.xL-STAIR_EPS+0.5;
+      else if(u.x>R.xR+STAIR_EPS) u.x=R.xR+STAIR_EPS-0.5;
+      // 不相接的孤立楼梯: 额外柔和地向路中心靠(走得顺); 相接处不拉(否则接点走不过去)
+      if(!stairHasNeighbor(st)){
+        const cx=(R.xL+R.xR)/2, hw=(R.xR-R.xL)/2;
+        if(hw>18 && Math.abs(u.x-cx)>1.5){
+          const k=Math.min(1, 3.5*dt);
+          u.x += (cx-u.x)*k;
+          if(u.x<R.xL) u.x=R.xL+0.5; else if(u.x>R.xR) u.x=R.xR-0.5;
+        }
+      }
+    }
+    // ★ 换层: 整组楼梯只有"最下面那一格的下半段"才降到下层(沿坡道自然上下楼)
+    const inside = stairRoadOk(st, u.x, u.y, STAIR_EPS);
+    if(inside){
+      const g1=stairGroupOf(st);
+      const fy=(u.y-g1.r0*TS)/TS;
+      u.l = (fy > g1.N-1) ? g1.l-1 : g1.l;
+      onStair=true;
+    }
+    break;
+  }
+  // ★ 非楼梯处【不自动换层】: 上下层只能靠楼梯(层不匹配的格子走不进去, 见 mcCanStand)
+}
+
+
+// ============================================================
+//  UI 文字: 像素风字体 + 双击就地编辑
+//  字体全部为 OFL 授权的像素字体, 放本地 assets/fonts/(不联网)
+//  渲染技巧: 先在离屏画布按字体原生尺寸(8/10/12px)排版, 再整数倍最近邻放大
+//            => 任何字号都保持硬边像素感(包括中文)
+// ============================================================
+const UI_FONTS=[
+  {css:"'PressStart2P','Zpix',monospace", native:8,  label:'中英混排(英文PS2P+中文Zpix)'},
+  {css:"'Zpix',monospace",                native:12, label:'中文·最像素 Zpix'},
+  {css:"'ArkPixel10',monospace",          native:10, label:'中文·方舟像素 10px'},
+  {css:"'PressStart2P',monospace",        native:8,  label:'英文·Press Start 2P'},
+];
+const _tcv=document.createElement('canvas'), _tc=_tcv.getContext('2d');
+function drawPixelText(text, cx, cy, px, color, fi){
+  text=String(text||''); if(!text) return;
+  const f=UI_FONTS[fi|0]||UI_FONTS[0];
+  const nat=f.native, k=Math.max(1, Math.round((px||16)/nat));    // 整数倍放大 = 像素颗粒
+  const lines=text.split('\n'), lh=nat+3;
+  _tc.font=nat+'px '+f.css;
+  let maxW=1; for(const ln of lines) maxW=Math.max(maxW, _tc.measureText(ln).width);
+  const W=Math.ceil(maxW)+4, H=lh*lines.length+4;
+  if(_tcv.width!==W||_tcv.height!==H){ _tcv.width=W; _tcv.height=H; }
+  _tc.font=nat+'px '+f.css; _tc.textAlign='center'; _tc.textBaseline='middle';
+  _tc.clearRect(0,0,W,H); _tc.fillStyle=color||'#3b2a17';
+  for(let i=0;i<lines.length;i++) _tc.fillText(lines[i], W/2, lh*(i+0.5)+1);
+  ctx.save(); ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(_tcv, Math.round(cx-W*k/2), Math.round(cy-H*k/2), W*k, H*k);
+  ctx.restore();
+}
+// ---- 浮层编辑 ----
+let editingItem=null, lastDownTs=0;
+function uiTextEl(){ return document.getElementById('textEditor'); }
+function syncTextEditorBox(){
+  if(!editingItem) return;
+  const e=uiTextEl(), cw=document.querySelector('.canvaswrap');
+  const cr=cv.getBoundingClientRect(), wr=cw.getBoundingClientRect();
+  const sc=(cv.width? cr.width/cv.width : 1)||1;
+  const s=editingItem.scale||1;
+  const w=Math.max(48,(editingItem.w||64)*s)*sc;
+  const left=(cr.left-wr.left)+cw.scrollLeft+(editingItem.x*sc-w/2);
+  const top =(cr.top -wr.top )+cw.scrollTop +(editingItem.y*sc-13);
+  e.style.left=Math.round(left)+'px'; e.style.top=Math.round(top)+'px';
+  e.style.width=Math.round(w)+'px';
+  e.style.fontSize=Math.max(11,Math.round((editingItem.textSize||16)*s*sc*0.55))+'px';
+  e.style.color=editingItem.textColor||'#f4e7c8';
+}
+function openTextEditor(it){
+  editingItem=it;
+  const e=uiTextEl();
+  e.value=it.text||''; e.style.display='block';
+  syncTextEditorBox();
+  setTimeout(()=>{ e.focus(); e.select(); }, 0);
+}
+function closeTextEditor(){
+  if(!editingItem) return;
+  const e=uiTextEl();
+  if(e.value.trim()) editingItem.text=e.value; else delete editingItem.text;
+  editingItem=null; e.style.display='none'; e.value='';
+  syncUiPanel(); draw();
+}
+function syncUiPanel(){
+  const it=(selectedLand && selectedLand.kind==='ui')? selectedLand : null;
+  const a=document.getElementById('uiText');   if(a) a.value = it? (it.text||'') : '';
+  const b=document.getElementById('uiTextSize'); if(b) b.value = it? (it.textSize||16) : 16;
+  const c=document.getElementById('uiTextColor'); if(c) c.value = it? (it.textColor||'#3b2a17') : '#3b2a17';
+  const d=document.getElementById('uiFont');   if(d) d.value = String(it? (it.textFont||0) : 0);
+}
+document.getElementById('uiText').oninput=e=>{ if(selectedLand&&selectedLand.kind==='ui'){ selectedLand.text=e.target.value; draw(); } };
+document.getElementById('uiTextSize').addEventListener('focus',()=>{ if(selectedLand&&selectedLand.kind==='ui') pushUndo('改文字'); });
+document.getElementById('uiTextSize').oninput=e=>{ const v=Math.max(6,Math.min(96,+e.target.value||16)); if(selectedLand&&selectedLand.kind==='ui'){ selectedLand.textSize=v; draw(); } };
+document.getElementById('uiTextColor').addEventListener('focus',()=>{ if(selectedLand&&selectedLand.kind==='ui') pushUndo('改文字颜色'); });
+document.getElementById('uiTextColor').oninput=e=>{ if(selectedLand&&selectedLand.kind==='ui'){ selectedLand.textColor=e.target.value; if(editingItem) syncTextEditorBox(); draw(); } };
+document.getElementById('uiFont').onchange=e=>{ if(selectedLand&&selectedLand.kind==='ui'){ pushUndo('改字体'); selectedLand.textFont=+e.target.value; draw(); } };
+// 双击 UI => 就地打字
+cv.addEventListener('dblclick',e=>{
+  if(tab!=='ui') return;
+  const p=ptrXY(e);
+  let hit=null;
+  for(let i=landscape.length-1;i>=0;i--){
+    const it=landscape[i];
+    if(it.kind!=='ui' || !layerVis[it.l]) continue;
+    const s=it.scale||1, w=(it.w||64)*s, h=(it.h||64)*s;
+    if(Math.abs(p.x-it.x)<=w/2+2 && Math.abs(p.y-it.y)<=h/2+2){ hit=it; break; }
+  }
+  if(!hit) return;
+  selectedLand=hit; syncUiPanel(); updateNineBox(); openTextEditor(hit); draw();
+});
+// 浮层事件
+(function(){
+  const e=uiTextEl(); if(!e) return;
+  e.addEventListener('input',()=>{ if(editingItem){ editingItem.text=e.value; draw(); } });
+  e.addEventListener('keydown',ev=>{
+    ev.stopPropagation();
+    if(ev.key==='Escape'){ ev.preventDefault(); closeTextEditor(); }
+    if(ev.key==='Enter' && !ev.shiftKey){ ev.preventDefault(); closeTextEditor(); }
+  });
+  e.addEventListener('blur',()=>closeTextEditor());
+})();
+// 等字体加载完重绘一次(否则首次渲染用的是回退字体)
+if(document.fonts && document.fonts.load){
+  Promise.all([document.fonts.load('12px Zpix'), document.fonts.load('10px ArkPixel10'), document.fonts.load('8px PressStart2P')])
+    .then(()=>draw()).catch(()=>{});
+}
+
 // 动画循环: 驱动景观帧
 let rafId=null, lastT=null;
-function startLoop(){ if(rafId) return; lastT=performance.now(); (function tick(now){ const dt=Math.min((now-lastT)/1000,0.05); lastT=now; animTime+=dt; draw(); rafId=requestAnimationFrame(tick); })(performance.now()); }
+function startLoop(){ if(rafId) return; lastT=performance.now(); (function tick(now){ const dt=Math.min((now-lastT)/1000,0.05); lastT=now; animTime+=dt;
+  updateMainChar(dt);                    // 主控角色移动/动作
+  draw(); rafId=requestAnimationFrame(tick); })(performance.now()); }
 
 // ---------- 导入/导出 (JSON) ----------
 function exportJson(){
   const data={ version:1, cols:COLS, rows:ROWS, curLayer:curLayer, layerVis:layerVis,
     layers:layers.map(g=>g.map(r=>r.slice())), stairs:stairs.map(s=>Object.assign({},s)), landscape:landscape.map(s=>Object.assign({},s)), units:units.map(s=>Object.assign({},s)) };
+  // 导出前自检: 内容为空时提醒(避免导出空白地图)
+  let cells=0; for(let l=0;l<NLAYER;l++) for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) if(layers[l][r][c]) cells++;
+  const nLand=landscape.length, nUnit=units.length, nStair=stairs.length;
+  const info=document.getElementById('expInfo');
+  const empty=(cells===0 && nLand===0 && nUnit===0);
+  if(info){
+    info.innerHTML = empty
+      ? '<b style="color:#ff6b5a">⚠ 导出的是一张空地图（没有任何地形/景观/角色）</b>'
+      : ('已导出 <b style="color:#e8ebf0">'+COLS+'×'+ROWS+'</b>：地形 <b style="color:#e8ebf0">'+cells+'</b> 格 · 楼梯 '+nStair+' · 景观 '+nLand+' · 角色 '+nUnit);
+  }
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='terrain-map.json'; a.click(); URL.revokeObjectURL(a.href);
 }
@@ -693,29 +1539,161 @@ function applyData(d){
   stairs=(d.stairs||[]).map(s=>Object.assign({},s));
   landscape=(d.landscape||[]).map(s=>Object.assign({},s));
   units=(d.units||[]).map(s=>Object.assign({},s));
+  // ★ 数组被重建 => 之前的主控/选中引用全部失效(否则按键会移动"幽灵角色")
+  setMainChar(null); selectedUnit=null; selectedLand=null; painting=false;
   document.getElementById('rows').value=ROWS; document.getElementById('cols').value=COLS;
   resizeCanvas(); renderLayerList(); renderBrushPanel(); renderLandList(); draw();
 }
 function importJson(file){
   if(!file) return;
   const reader=new FileReader();
-  reader.onload=()=>{ try{ applyData(JSON.parse(reader.result)); }catch(e){ document.title='导入失败: '+e.message; } };
+  reader.onload=()=>{ try{ applyData(JSON.parse(reader.result)); document.title='地形编辑器 · 已导入'; }catch(e){ document.title='导入失败: '+e.message; } };
   reader.readAsText(file);
 }
 document.getElementById('foamScale').oninput=e=>{ foamScale=Math.max(0.4,Math.min(4,+e.target.value||1)); draw(); };
 document.getElementById('shadowScale').oninput=e=>{ shadowScale=Math.max(0.4,Math.min(4,+e.target.value||1)); draw(); };
 document.getElementById('shadowBtn').onclick=()=>{ shadowOn=shadowOn?0:1; document.getElementById('shadowBtn').textContent='阴影:'+(shadowOn?'开':'关'); draw(); };
 document.getElementById('foamBtn').onclick=()=>{ waterFoamOn=waterFoamOn?0:1; document.getElementById('foamBtn').textContent='水泡:'+(waterFoamOn?'开':'关'); draw(); };
+// ---------- 撤销栈 / 二次确认 ----------
+const undoStack=[]; const UNDO_MAX=25;
+let armTimer=null;
+function takeSnapshot(){
+  return JSON.stringify({ version:1, cols:COLS, rows:ROWS, curLayer:curLayer, layerVis:layerVis,
+    layers:layers.map(g=>g.map(r=>r.slice())), stairs:stairs.map(s=>Object.assign({},s)),
+    landscape:landscape.map(s=>Object.assign({},s)), units:units.map(s=>Object.assign({},s)) });
+}
+function updateUndoBtn(){
+  const b=document.getElementById('undoLoad'); if(!b) return;
+  const top=undoStack[undoStack.length-1];
+  if(top){ b.style.display=''; b.textContent='↩ 撤销：'+top.label+'（Ctrl+Z）'; }
+  else { b.style.display='none'; }
+}
+// 每次"会改动内容"的操作前压一份快照(最多 25 步)
+function pushUndo(label){
+  undoStack.push({ label:label||'上一步', data:takeSnapshot() });
+  if(undoStack.length>UNDO_MAX) undoStack.shift();
+  updateUndoBtn();
+}
+function undoOnce(){
+  const s=undoStack.pop(); if(!s) return false;
+  const mi = mainChar? units.indexOf(mainChar) : -1;
+  applyData(JSON.parse(s.data));
+  if(mi>=0 && units[mi]){ selectedUnit=units[mi]; setMainChar(units[mi]); }
+  updateUndoBtn();
+  document.title='地形编辑器 · 已撤销: '+s.label;
+  return true;
+}
+// 二次确认: 第一次点变警告文案, 4 秒内再点才真的加载
+function guarded(btnId, fn, warnText){
+  const b=document.getElementById(btnId);
+  if(b.dataset.armed==='1'){ clearTimeout(armTimer); b.dataset.armed='0'; b.textContent=b.dataset.label||b.textContent; fn(); return; }
+  b.dataset.label=b.textContent; b.dataset.armed='1';
+  b.textContent=warnText||'⚠ 会覆盖当前地图，再点一次确认';
+  clearTimeout(armTimer);
+  armTimer=setTimeout(()=>{ b.dataset.armed='0'; b.textContent=b.dataset.label; }, 4000);
+}
+// 一键清除: 地形全清空(全水) + 楼梯/景观/角色/选中全部清掉; 地图尺寸不变
+document.getElementById('clearAllBtn').onclick=()=>guarded('clearAllBtn', ()=>{
+  pushUndo('一键清除');
+  for(let l=0;l<NLAYER;l++) for(let r=0;r<ROWS;r++) layers[l][r].fill(0);
+  stairs.length=0; landscape.length=0; units.length=0;
+  setMainChar(null); selectedUnit=null; selectedLand=null; painting=false;
+  updateUndoBtn(); renderLayerList(); draw();
+  document.title='地形编辑器 · 已一键清除';
+}, '⚠ 会清空当前地图，再点一次确认');
+document.getElementById('undoLoad').onclick=()=>{ undoOnce(); };
+addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z'){ e.preventDefault(); undoOnce(); }
+});
+// ---------- 插入行 / 插入列(地形+楼梯+景观+角色一起平移) ----------
+function insertRows(at,n){
+  at=Math.max(1,Math.min(ROWS+1,+at||1)); n=Math.max(1,Math.min(50,+n||1));
+  const idx=at-1;                                   // 0 基插入点: 在第 at 行之前
+  pushUndo('插入 '+n+' 行');
+  for(let l=0;l<NLAYER;l++){ const g=layers[l]; for(let k=0;k<n;k++) g.splice(idx,0,new Array(COLS).fill(0)); }
+  const cut=idx*TS;
+  for(const s of stairs){ if(s.r>=idx) s.r+=n; }
+  for(const it of landscape){ if(it.y>=cut) it.y+=n*TS; }
+  for(const u of units){ if(u.y>=cut) u.y+=n*TS; }
+  ROWS+=n; document.getElementById('rows').value=ROWS;
+  resizeCanvas(); renderLayerList(); updateUndoBtn(); draw();
+  document.title='地形编辑器 · 已在第 '+at+' 行前插入 '+n+' 行';
+}
+function insertCols(at,n){
+  at=Math.max(1,Math.min(COLS+1,+at||1)); n=Math.max(1,Math.min(50,+n||1));
+  const idx=at-1;
+  pushUndo('插入 '+n+' 列');
+  for(let l=0;l<NLAYER;l++){ const g=layers[l]; for(let r=0;r<g.length;r++) for(let k=0;k<n;k++) g[r].splice(idx,0,0); }
+  const cut=idx*TS;
+  for(const s of stairs){ if(s.c>=idx) s.c+=n; }
+  for(const it of landscape){ if(it.x>=cut) it.x+=n*TS; }
+  for(const u of units){ if(u.x>=cut) u.x+=n*TS; }
+  COLS+=n; document.getElementById('cols').value=COLS;
+  resizeCanvas(); renderLayerList(); updateUndoBtn(); draw();
+  document.title='地形编辑器 · 已在第 '+at+' 列前插入 '+n+' 列';
+}
+function deleteRows(at,n){
+  at=Math.max(1,Math.min(ROWS,+at||1)); n=Math.max(1,Math.min(50,+n||1));
+  n=Math.min(n, ROWS-at+1); if(n<=0) return;
+  const idx=at-1, end=idx+n, cut0=idx*TS, cut1=end*TS;
+  pushUndo('删除 '+n+' 行');
+  for(let l=0;l<NLAYER;l++) layers[l].splice(idx,n);
+  ROWS-=n;
+  let lostS=0, lostL=0, lostU=0;
+  const s2=[]; for(const s of stairs){ if(s.r>=idx&&s.r<end){ lostS++; continue; } if(s.r>=end) s.r-=n; s2.push(s); }
+  stairs=s2;
+  const l2=[]; for(const it of landscape){ if(it.y>=cut0&&it.y<cut1){ lostL++; continue; } if(it.y>=cut1) it.y-=n*TS; l2.push(it); }
+  landscape=l2;
+  const u2=[]; for(const u of units){ if(u.y>=cut0&&u.y<cut1){ lostU++; continue; } if(u.y>=cut1) u.y-=n*TS; u2.push(u); }
+  units=u2;
+  if(mainChar && units.indexOf(mainChar)<0) setMainChar(null);
+  if(selectedUnit && units.indexOf(selectedUnit)<0) selectedUnit=null;
+  if(selectedLand && landscape.indexOf(selectedLand)<0) selectedLand=null;
+  document.getElementById('rows').value=ROWS;
+  resizeCanvas(); renderLayerList(); updateUndoBtn(); draw();
+  document.title='地形编辑器 · 删除 '+n+' 行（同时移除 景观'+lostL+'/角色'+lostU+'）';
+}
+function deleteCols(at,n){
+  at=Math.max(1,Math.min(COLS,+at||1)); n=Math.max(1,Math.min(50,+n||1));
+  n=Math.min(n, COLS-at+1); if(n<=0) return;
+  const idx=at-1, end=idx+n, cut0=idx*TS, cut1=end*TS;
+  pushUndo('删除 '+n+' 列');
+  for(let l=0;l<NLAYER;l++){ const g=layers[l]; for(let r=0;r<g.length;r++) g[r].splice(idx,n); }
+  COLS-=n;
+  let lostS=0, lostL=0, lostU=0;
+  const s2=[]; for(const s of stairs){ if(s.c>=idx&&s.c<end){ lostS++; continue; } if(s.c>=end) s.c-=n; s2.push(s); }
+  stairs=s2;
+  const l2=[]; for(const it of landscape){ if(it.x>=cut0&&it.x<cut1){ lostL++; continue; } if(it.x>=cut1) it.x-=n*TS; l2.push(it); }
+  landscape=l2;
+  const u2=[]; for(const u of units){ if(u.x>=cut0&&u.x<cut1){ lostU++; continue; } if(u.x>=cut1) u.x-=n*TS; u2.push(u); }
+  units=u2;
+  if(mainChar && units.indexOf(mainChar)<0) setMainChar(null);
+  if(selectedUnit && units.indexOf(selectedUnit)<0) selectedUnit=null;
+  if(selectedLand && landscape.indexOf(selectedLand)<0) selectedLand=null;
+  document.getElementById('cols').value=COLS;
+  resizeCanvas(); renderLayerList(); updateUndoBtn(); draw();
+  document.title='地形编辑器 · 删除 '+n+' 列（同时移除 景观'+lostL+'/角色'+lostU+'）';
+}
+document.getElementById('insRowBtn').onclick=()=>insertRows(document.getElementById('insRowAt').value, document.getElementById('insRowN').value);
+document.getElementById('delRowBtn').onclick=()=>deleteRows(document.getElementById('insRowAt').value, document.getElementById('insRowN').value);
+document.getElementById('insColBtn').onclick=()=>insertCols(document.getElementById('insColAt').value, document.getElementById('insColN').value);
+document.getElementById('delColBtn').onclick=()=>deleteCols(document.getElementById('insColAt').value, document.getElementById('insColN').value);
 document.getElementById('exportBtn').onclick=exportJson;
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
-document.getElementById('importFile').addEventListener('change',e=>{ importJson(e.target.files[0]); e.target.value=''; });
-document.getElementById('initWater').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=0; draw(); };
-document.getElementById('initGrass').onclick=()=>{ for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
-document.getElementById('demoCliff').onclick=()=>{
+document.getElementById('importFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; e.target.value='';
+  if(!f) return;
+  pushUndo('导入地图');                   // 导入前也存快照
+  importJson(f);
+});
+document.getElementById('initWater').onclick=()=>{ pushUndo('第0层全水'); for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=0; draw(); };
+document.getElementById('initGrass').onclick=()=>{ pushUndo('第0层全草'); for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++) layers[0][r][c]=1; draw(); };
+document.getElementById('demoCliff').onclick=()=>guarded('demoCliff', ()=>{
   // 示例1: 在当前目录导入指定文件 terrain-map.json(复用 applyData)
+  pushUndo('加载示例1');                  // 先存快照, 随时可撤销
   fetch('terrain-map.json', { cache:'no-store' })
     .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-    .then(d=>{ try{ applyData(d); }catch(e){ alert('示例1 应用失败: '+e.message); } })
+    .then(d=>{ try{ applyData(d); updateUndoBtn(); document.title='地形编辑器 · 已加载示例1'; }catch(e){ alert('示例1 应用失败: '+e.message); } })
     .catch(e=>{
   if(location.protocol==='file:'){
     alert('当前是 file:// 打开, 浏览器禁止 fetch 加载 json。\n请改用 http 访问: http://127.0.0.1:8131/ (服务器在运行)');
@@ -723,10 +1701,11 @@ document.getElementById('demoCliff').onclick=()=>{
     alert('示例1 加载失败: '+e.message+'\n页面: '+location.href+'\n目标: '+new URL('terrain-map.json', location.href).href);
   }
 });
-};
+});
 document.getElementById('applySize').onclick=()=>{
   const nr=Math.max(4,Math.min(200,+document.getElementById('rows').value||ROWS));
   const nc=Math.max(4,Math.min(200,+document.getElementById('cols').value||COLS));
+  pushUndo('应用画布大小 '+nc+'×'+nr);
   for(let l=0;l<NLAYER;l++){
     let g=layers[l]; g=g.slice(0,nr); while(g.length<nr) g.push(new Array(nc).fill(0));
     for(let r=0;r<nr;r++){ g[r]=g[r].slice(0,nc); while(g[r].length<nc) g[r].push(0); }
@@ -734,6 +1713,38 @@ document.getElementById('applySize').onclick=()=>{
   }
   ROWS=nr; COLS=nc; resizeCanvas(); draw();
 };
+
+// ---------- UI 素材: 加载 + 自动分片(拼片结构自动识别) ----------
+(function loadUi(){
+  let done=0;
+  UI_ASSETS.forEach((a,i)=>{
+    img(a.file)
+      .then(im=>{ uiImgs[i]=im; uiMeta[i]=detectNine(im); })          // 自动分片
+      .catch(()=>{ uiMeta[i]={mode:'single',natW:a.w,natH:a.h}; })
+      .then(()=>{ if(++done===UI_ASSETS.length){ renderUiList(); updateNineBox(); draw(); } });
+  });
+})();
+// UI 面板接线
+document.getElementById('uiW').oninput=e=>{ uiW=Math.max(16,Math.min(2048,+e.target.value||320)); if(selectedLand&&selectedLand.kind==='ui') selectedLand.w=uiW; renderNineCode(); draw(); };
+document.getElementById('uiH').oninput=e=>{ uiH=Math.max(16,Math.min(2048,+e.target.value||64)); if(selectedLand&&selectedLand.kind==='ui') selectedLand.h=uiH; renderNineCode(); draw(); };
+document.getElementById('uiScale').oninput=e=>{ uiScaleVal=Math.max(0.2,Math.min(4,+e.target.value||1)); if(selectedLand&&selectedLand.kind==='ui') selectedLand.scale=uiScaleVal; draw(); };
+document.getElementById('uiFlipBtn').onclick=()=>{ if(selectedLand&&selectedLand.kind==='ui'){ selectedLand.flip=(selectedLand.flip||1)*-1; draw(); } else alert('请先用手套选中一个 UI 元素'); };
+
+// ---------- 主控角色面板接线 ----------
+document.getElementById('mainCharBtn').onclick=()=>{
+  let u=selectedUnit;
+  if(!u){   // 没选中就把当前角色放到画布中心, 直接开玩
+    const role=(unitBrush&&unitBrush.role)||'pawn';
+    u={ l:curLayer, x:COLS*TS/2, y:ROWS*TS/2, role:role, scale:unitScaleVal, faction:placeFaction, flip:1,
+        anim:'idle', mcDir:{x:1,y:0}, mcTool:0 };
+    units.push(u); selectedUnit=u;
+  }
+  u.anim='idle'; u.mcDir={x:1,y:0}; u.mcTool=0;
+  mcDir={x:1,y:0}; mcTool=0;
+  setMainChar(u); draw();
+};
+document.getElementById('mainCharClear').onclick=()=>{ if(mainChar) mainChar.anim='idle'; setMainChar(null); draw(); };
+setMainChar(null);
 
 // ---------- 阵营素材(5 阵营 × 角色/建筑) ----------
 const FACTIONS=[['blue','蓝'],['red','红'],['purple','紫'],['yellow','黄'],['black','黑']];
@@ -787,6 +1798,26 @@ Promise.all([
     A.units[role]={ imgs:[byFaction.blue], byFaction, fw,fh, frames, fps, label, foot };
   }
   resizeCanvas(); renderLayerList(); renderBrushPanel(); draw(); startLoop();
+  // ★ 启动即载入示例地图 + 自动指定一个主控角色(用户要求: 打开就是示例界面且能直接操控)
+  fetch('terrain-map.json', { cache:'no-store' })
+    .then(r=>r.ok? r.json() : Promise.reject(new Error('HTTP '+r.status)))
+    .then(d=>{
+      try{
+        applyData(d);
+        // 优先选"脚下有草地"的角色当主控(避免选到悬空的)
+        let pick=null;
+        for(const u of units){
+          const c=Math.floor(u.x/TS), r2=Math.floor(u.y/TS);
+          if(mcGroundLayer(r2,c)>=0){ pick=u; break; }
+        }
+        if(!pick && units.length) pick=units[0];
+        switchTab('units');
+        if(pick){ selectedUnit=pick; setMainChar(pick); }
+        renderLayerList(); draw();
+        document.title='地形编辑器 · 示例已载入（WASD 移动 · J 攻击）';
+      }catch(e){ document.title='示例应用失败: '+e.message; }
+    })
+    .catch(err=>{ document.title='地形编辑器 · 示例加载失败('+err.message+')，请用 http 打开'; });
 })
 .catch(e=>{ document.title='ERR '+e.message; });
 </script>

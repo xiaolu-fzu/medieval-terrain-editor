@@ -7,3 +7,6 @@ _tree_frame*
 开发文档.md
 需求文档.md
 编辑器逻辑总览.md
+
+# 旧示例备份(本地保留, 不入库)
+terrain-map.backup-*.json
