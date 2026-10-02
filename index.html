@@ -1815,11 +1815,16 @@ Promise.all([
     .then(d=>{
       try{
         applyData(d);
-        // 优先选"脚下有草地"的角色当主控(避免选到悬空的)
+        // 默认主控: 优先「武士」, 多个武士时取所在层最高的那个(用户要求默认选第2层的武士)
         let pick=null;
-        for(const u of units){
-          const c=Math.floor(u.x/TS), r2=Math.floor(u.y/TS);
-          if(mcGroundLayer(r2,c)>=0){ pick=u; break; }
+        const wars=units.filter(u=> u.role==='warrior');
+        if(wars.length) pick=wars.reduce((a,b)=> ((b.l||0) > (a.l||0) ? b : a));
+        // 退路: 脚下有草地的角色 -> 第一个角色
+        if(!pick){
+          for(const u of units){
+            const c=Math.floor(u.x/TS), r2=Math.floor(u.y/TS);
+            if(mcGroundLayer(r2,c)>=0){ pick=u; break; }
+          }
         }
         if(!pick && units.length) pick=units[0];
         switchTab('units');
