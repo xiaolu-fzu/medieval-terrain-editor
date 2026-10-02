@@ -107,6 +107,7 @@
     <span class="hint" title="第0层：水/草地 · 1-3层：草地/高处地面 —— 点药丸切层，勾选框控显示">选层绘制 · 勾选显示</span>
     <div id="layerList" class="layer-bar"></div>
     <div style="display:flex;gap:6px;margin-left:auto;">
+      <button class="btn" id="stairZoneBtn">楼梯区域:关</button>
       <button class="btn" id="foamBtn">水泡:开</button>
       <div class="field" style="width:64px"><label>水泡</label><input type="number" id="foamScale" value="3" min="0.4" max="4" step="0.1"></div>
       <button class="btn" id="shadowBtn">阴影:开</button>
@@ -575,8 +576,8 @@ function draw(){
     const cfg=A.units[selectedUnit.role];
     if(cfg){ const s=selectedUnit.scale||1; selBox(selectedUnit.x, selectedUnit.y, cfg.fw*s, cfg.fh*s, 0.55); }
   }
-  if(mainChar && tab==='units'){
-    // ★ 主控时把可通行区域画出来: 每组楼梯 = 一个大长方形, 上下两条平行对角线之间可走
+  if(showStairZone){
+    // ★ 楼梯可通行区域显示(顶栏开关, 默认关): 每组楼梯 = 一个大长方形, 上下两条平行对角线之间可走
     ctx.save();
     for(const st of stairs){
       if(!layerVis[st.l]) continue;
@@ -754,12 +755,20 @@ cv.addEventListener('wheel',e=>{ if(tab==='landscape' && landBrush==='glove'){ e
   if(sl){ const d=e.deltaY>0?-0.1:0.1; sl.scale=Math.max(0.2,Math.min(4,(sl.scale||1)+d)); document.getElementById('landScaleSel').value=sl.scale; draw(); }
 } },{passive:false});
 // ---------- 全局工具 / 摆放方式 (景观·角色·UI 通用) ----------
-function savePrefs(){ try{ localStorage.setItem('editor.prefs', JSON.stringify({gTool:gTool, gMode:gMode})); }catch(e){} }
+let showStairZone=false;   // 楼梯可通行区域显示开关(默认关)
+function updateStairZoneBtn(){
+  const b=document.getElementById('stairZoneBtn'); if(!b) return;
+  b.textContent='楼梯区域:'+(showStairZone?'开':'关');
+  b.classList.toggle('amber', showStairZone);
+}
+function savePrefs(){ try{ localStorage.setItem('editor.prefs', JSON.stringify({gTool:gTool, gMode:gMode, stair:showStairZone})); }catch(e){} }
 function loadPrefs(){
   try{ const s=JSON.parse(localStorage.getItem('editor.prefs')||'{}');
     if(s.gTool) gTool=s.gTool;
     if(s.gMode) gMode=s.gMode;
+    if(typeof s.stair==='boolean') showStairZone=s.stair;
     landBrush=gTool; unitBrushTool=gTool; landscapeMode=(gMode==='grid')?'geom':'free';
+    updateStairZoneBtn();
   }catch(e){}
 }
 function syncGlobalUI(){
@@ -1678,6 +1687,8 @@ document.getElementById('insRowBtn').onclick=()=>insertRows(document.getElementB
 document.getElementById('delRowBtn').onclick=()=>deleteRows(document.getElementById('insRowAt').value, document.getElementById('insRowN').value);
 document.getElementById('insColBtn').onclick=()=>insertCols(document.getElementById('insColAt').value, document.getElementById('insColN').value);
 document.getElementById('delColBtn').onclick=()=>deleteCols(document.getElementById('insColAt').value, document.getElementById('insColN').value);
+document.getElementById('stairZoneBtn').onclick=()=>{ showStairZone=!showStairZone; updateStairZoneBtn(); savePrefs(); draw(); };
+updateStairZoneBtn();
 document.getElementById('exportBtn').onclick=exportJson;
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
 document.getElementById('importFile').addEventListener('change',e=>{
